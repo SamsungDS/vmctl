@@ -1,0 +1,55 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+USAGE="usage: ${BASENAME} -c CONFIG poweroff
+
+The \`poweroff\` command gracefully shuts down the running virtual machine
+defined by the given \`CONFIG\` if supported by the machine."
+
+_poweroff() {
+  _require_program socat
+
+  local short="h"
+  local long="help"
+
+  if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '-h' | '--help' )
+        _usage "$USAGE" 0
+        ;;
+      '--' )
+        shift; break
+        ;;
+      '*' )
+        _usage "$USAGE" 1
+        ;;
+    esac
+  done
+
+  if ! _is_running; then
+    _fatal 1 "$VMNAME does not appear to be running"
+  fi
+
+  if ! _is_daemonized; then
+    _fatal 1 "$VMNAME is running interactively; attach to monitor from console using 'Ctrl-a c' and type 'system_powerdown'"
+  fi
+
+  local args=(
+    "-"
+    "unix-connect:${VMRUN}/monitor"
+  )
+
+  if ! echo system_powerdown | socat "${args[@]}" >> "${VMLOG}/full" 2>&1; then
+    _fatal 1 "could not power off vm; see ${VMLOG}/full"
+  fi
+}

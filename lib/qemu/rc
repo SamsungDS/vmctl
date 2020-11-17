@@ -1,0 +1,126 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+_create_image() {
+  local format="raw"
+
+  local long="backing:,format:,size:,force"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--backing' )
+        local backing="$2"; shift 2
+
+        if [[ ! -r "$backing" ]]; then
+          _error "${FUNCNAME[0]}: cannot read '$backing'"
+        fi
+
+        ;;
+      '--format' )
+        format="$2"; shift 2
+        ;;
+      '--size' )
+        local size="$2"; shift 2
+        ;;
+      '--force' )
+        local do_force=1; shift
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    echo "${FUNCNAME[0]}: missing image name"
+  fi
+
+  local file="$1"; shift
+
+  if [[ -f "$file" && ! -v do_force ]]; then
+    return 0
+  fi
+
+  if [[ ! -v size ]]; then
+    _fatal 1 "missing required 'size' argument"
+  fi
+
+  local args=("-f" "$format")
+
+  if [[ -v backing ]]; then
+    args+=("-b" "$backing")
+  fi
+
+  _log_named "qemu-img/create" qemu-img create "${args[@]}" "$file" "$size"
+}
+
+qemu_drive_add() {
+  local format="raw"
+  local intf="none"
+  local discard="off"
+  local media="disk"
+
+  local long="file:,format:,interface:,discard,cdrom"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--file' )
+        local file="$2"; shift 2
+
+        if [[ -v DOCKER_IMAGE ]]; then
+          file="/${file}"
+        fi
+        ;;
+
+      '--format' )
+        format="$2"; shift 2
+        ;;
+
+      '--interface' )
+        intf="$2"; shift 2
+        ;;
+
+      '--discard' )
+        discard="unmap"; shift
+        ;;
+
+      '--cdrom' )
+        media="cdrom"; shift
+        ;;
+
+      '--' )
+        shift; break;
+        ;;
+
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "missing drive id"
+  fi
+
+  QEMU_PARAMS+=("-drive" "id=$1,file=$file,format=$format,if=$intf,discard=$discard,media=$media")
+}

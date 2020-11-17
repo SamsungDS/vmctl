@@ -1,0 +1,100 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+set -euo pipefail
+
+# script basename and basedir
+BASENAME="$(basename "${BASH_SOURCE[0]}")"
+BASEDIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+
+#shellcheck source=common/rc
+source "${BASEDIR}/common/rc"
+
+#shellcheck source=common/defaults
+source "${BASEDIR}/common/defaults"
+
+USAGE="usage: ${BASENAME} -c CONFIG COMMAND [OPTION...]
+
+QEMU Testing Galore!
+
+See \`vmctl -c CONFIG <command> --help\` for usage on individual commands.
+
+Options:
+  -c, --config    virtual machine configuration to use; required for most
+                  commands
+
+Commands:
+  run             launch a vm configuration
+  ssh             ssh into a running VM
+  log             show logs from a VM
+  console         attach to the serial console of a running VM
+  monitor         attach to the QEMU monitor of a running VM
+  poweroff        gracefully shutdown a running VM (if supported)
+  kill            kill a VM (monitor quit)
+  vars            return output suitable for \`eval\`, specifying various
+                  variables about the setup"
+
+_main() {
+  local short="c:h"
+  local long="config:,help"
+
+  if ! tmp=$(getopt -o "+${short}" --long "$long" -n "${BASH_SOURCE[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '-c' | '--config' )
+        if [[ ! -r "$2" ]]; then
+          _fatal 1 "could not read vm configuration '$2'"
+        fi
+
+        VMCONFIG="$2"; shift 2
+        ;;
+
+      '-h' | '--help' )
+        _usage "$USAGE" 0
+        ;;
+
+      '--' )
+        shift; break
+        ;;
+
+      * )
+        exit 1
+        ;;
+    esac
+  done
+
+  if [[ $# -lt 1 ]]; then
+    _usage "$USAGE" 1
+  fi
+
+  subcmd="$1"; shift
+
+  # handle aliases
+  case "$subcmd" in
+    "stop" )
+      subcmd="poweroff"
+      ;;
+  esac
+
+  if [[ ! -f "${BASEDIR}/cmd/${subcmd}" ]]; then
+    _usage "$USAGE" 1
+  fi
+
+  _load_vm
+
+  #shellcheck disable=SC1090
+  source "${BASEDIR}/cmd/${subcmd}"
+
+  "_${subcmd}" "$@"
+}
+
+_main "$@"

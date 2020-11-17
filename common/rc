@@ -1,0 +1,176 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+#shellcheck source=common/shellcheck
+source "${BASEDIR}/common/shellcheck"
+
+_rc=
+
+# https://serverfault.com/a/281633
+_shell_quote() {
+  (
+      sqesc=$(printf '%s\n' "$1" | sed -e "s/'/'\\\\''/g")
+      printf '%s' "\"${sqesc}\""
+  )
+}
+
+_prefix() {
+  awk "{
+    print \"$1 \" \$0
+  }"
+}
+
+_log_named() {
+  local name="$1"; shift;
+
+  if [[ -v DEBUG ]]; then
+    printf "[DEBUG; COMMAND]: %s\n" "$(_shq "$@")" >&2
+  fi
+
+  "$@" > >(_prefix "   ${name}: "); _rc="$?"; return "$_rc"
+}
+
+_prefix_err() {
+  _prefix "\x1b[1;31m>>\x1b[0m"
+}
+
+_prefix_ok() {
+  _prefix "\x1b[1;32m>>\x1b[0m"
+}
+
+_prefix_info() {
+  _prefix "\x1b[1m>>\x1b[0m"
+}
+
+_log_frame() {
+  local sev="$1"
+  local frame="$2"
+
+  shift 2
+
+  local _IFS="$IFS"
+  IFS=$' '
+
+  case "$sev" in
+    fatal | debug )
+      echo "(${FUNCNAME[$frame]}; ${BASH_SOURCE[$frame]}:${BASH_LINENO[(($frame-1))]}): $*" | _prefix_err >&2
+      ;;
+    err | error )
+      echo "$*" | _prefix_err >&2
+      ;;
+    ok | success )
+      echo "$*" | _prefix_ok
+      ;;
+    * )
+      echo "$*" | _prefix_info
+      ;;
+  esac
+
+  IFS="$_IFS"
+}
+
+_log() {
+  _log_frame info 2 "$@"
+}
+
+_success() {
+  _log_frame success 2 "$@"
+}
+
+_error() {
+  _log_frame err 2 "$@"
+}
+
+_fatal() {
+  local rc="$1"; shift
+  _log_frame err 2 "$@"
+  exit "$rc"
+}
+
+_show_error_log() {
+  awk "{
+    if (NR > 10) {
+      print \"    ...\"
+      print \"    (See 'vmctl.log' for full error message)\"
+      exit
+    }
+    print \"    \" \$0
+  }" "${VMLOG}/error.log" | _prefix_err
+}
+
+_interrupt() {
+  _error "interrupted"
+  trap - INT
+
+  # From https://mywiki.wooledge.org/SignalTrap
+  #
+  #   "... a process that exits in response to SIGINT should kill itself with
+  #   SIGINT rather than simply exiting, to avoid causing problems for its
+  #   caller."
+  kill -s INT "$$"
+}
+
+_usage() {
+  if [[ $2 -ne 0 ]]; then
+    echo "$1" >&2
+    exit "$2"
+  fi
+
+  echo "$1"
+  exit 0
+}
+
+_require_program() {
+  if ! command -v "$1" >/dev/null; then
+    _fatal 1 "'$1' is not installed"
+  fi
+}
+
+_is_running() {
+  if [[ -f "${VMRUN}/pidfile" ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+_is_daemonized() {
+  if [[ -S "${VMRUN}/monitor" ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+_load_vm() {
+  declare -xg VMNAME VMROOT VMIMG VMSTATE VMRUN VMLOG
+
+  if [[ ! -v VMCONFIG ]]; then
+    _error "no configuration file specified"
+    _usage "$USAGE" 1
+  fi
+
+  if [[ ! -r "$VMCONFIG" ]]; then
+    _fatal 1 "cannot read vm config '$VMCONFIG'"
+  fi
+
+  VMNAME="$(basename "${VMCONFIG%.conf}")"
+  VMROOT="$(dirname "$(realpath -s "$VMCONFIG")")"
+
+  VMIMG="${VMROOT}/img"
+  VMSTATE="${VMROOT}/state/${VMNAME}"
+  VMRUN="${VMROOT}/run/${VMNAME}"
+  VMLOG="${VMROOT}/log/${VMNAME}"
+
+  mkdir -p "$VMSTATE" "$VMRUN" "$VMLOG"
+
+  pushd "$VMROOT" >/dev/null || _fatal $? "could not change directory"
+
+  #shellcheck disable=SC1090
+  source "$(basename "${VMCONFIG}")"
+
+  popd >/dev/null || _fatal $? "could not change directory"
+}

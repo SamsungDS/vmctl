@@ -1,0 +1,16 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+# default qemu system binary
+: "${QEMU_SYSTEM_BINARY:="qemu-system-x86_64"}"
+
+# default base boot image to derive images from
+: "${GUEST_BOOT_BASE:="img/base.qcow2"}"
+
+# default ssh parameters (for `vmctl ssh`)
+: "${GUEST_SSH_HOST:="localhost"}"
+: "${GUEST_SSH_PORT:="2222"}"
+: "${GUEST_SSH_USER:="root"}"

@@ -1,0 +1,164 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+#shellcheck source=lib/qemu/rc
+source "${BASEDIR}/lib/qemu/rc"
+
+qemu_nvme_add_subsys() {
+  local id
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "${FUNCNAME[0]}: missing id"
+  fi
+
+  id="$1"; shift
+
+  QEMU_PARAMS+=("-device" "nvme-subsys,id=${id}")
+}
+
+qemu_nvme_add_ctrl() {
+  local long="serial:,port:,subsys:,extra:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--serial' )
+        serial="$2"; shift 2
+        ;;
+      '--port' )
+        port="$2"; shift 2
+        ;;
+      '--subsys' )
+        subsys="$2"; shift 2
+        ;;
+      '--extra' )
+        extra="$2"; shift 2;
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "${FUNCNAME[0]}: missing id"
+  fi
+
+  id="$1"; shift
+
+  if [[ ! -v serial ]]; then
+    _fatal 1 "${FUNCNAME[0]}: missing required '--serial' argument"
+  fi
+
+  params="nvme,id=${id},serial=${serial}"
+
+  if [[ -v port ]]; then
+    params="${params},bus=${port}"
+  fi
+
+  if [[ -v subsys ]]; then
+    params="${params},subsys=${subsys}"
+  fi
+
+  if [[ -v extra ]]; then
+    params="${params},${extra}"
+  fi
+
+  QEMU_PARAMS+=("-device" "$params")
+}
+
+qemu_nvme_add_ns() {
+  local nsid
+  local ctrl
+  local size
+  local extra
+
+  local long="nsid:,ctrl:,subsys:,size:,extra:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--nsid' )
+        nsid="$2"; shift 2
+        ;;
+      '--ctrl' )
+        ctrl="$2"; shift 2
+        ;;
+      '--subsys' )
+        subsys="$2"; shift 2
+        ;;
+      '--size' )
+        size="$2"; shift 2
+        ;;
+      '--extra' )
+        extra="$2"; shift 2;
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "missing namespace name"
+  fi
+
+  id="$1"; shift
+
+  if [[ ! -v nsid ]]; then
+    _fatal 1 "missing 'nsid' argument"
+  fi
+
+  if [[ ! ( -v ctrl || -v subsys ) ]]; then
+    _fatal 1 "'ctrl' or 'subsys' argument must be specified"
+  fi
+
+  if [[ -v ctrl && -v subsys ]]; then
+    _fatal 1 "only one of 'ctrl' or 'subsys' may be specified"
+  fi
+
+  if [[ ! -v size ]]; then
+    _fatal 1 "missing required 'size' argument"
+  fi
+
+  if [[ ! -f "${VMSTATE}/${id}.img" || -v RESET ]]; then
+    _create_image "${VMSTATE}/${id}.img" --size "$size" --force
+  fi
+
+  qemu_drive_add "$id" --file "state/${VMNAME}/${id}.img" --discard
+
+  params="nvme-ns,id=$id,nsid=$nsid,drive=$id"
+
+  if [[ -v ctrl ]]; then
+    params="${params},bus=$ctrl"
+  else
+    params="${params},subsys=$subsys"
+  fi
+
+  if [[ -v extra ]]; then
+    params="${params},${extra}"
+  fi
+
+  QEMU_PARAMS+=("-device" "$params")
+}

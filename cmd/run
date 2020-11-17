@@ -1,0 +1,283 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+set -euo pipefail
+
+#shellcheck source=common/rc
+source "${BASEDIR}/common/rc"
+
+for rc in "${BASEDIR}"/lib/qemu/*; do
+  #shellcheck disable=SC1090
+  source "$rc"
+done
+
+USAGE="usage: ${BASENAME} -c CONFIG run [OPTION...]
+
+The \`run\` command launches the virtual machine defined by the given
+\`CONFIG\`.
+
+Options:
+  -h, --help                display this help message and exit
+  -k, --kernel-dir DIR      directory containing the kernel source. The
+                            directory will be made available to the vm as a p9
+                            virtfs with mount tag 'kernel_dir'
+  -c, --cloud-init          use '${VMROOT}/img/seed.img' as a cloud-init seed
+  -d, --docker-image IMAGE  docker image to use instead of qemu system binary
+  -b, --background          start the docker container in detached mode
+  -g, --gdb                 launch under gdb (only for non-docker)
+  -f, --reset               recreate images associated with devices
+  -n, --print               print qemu/docker invocation command instead of
+                            executing it
+  -t, --trace EVENT,...     enable/disable trace event (seperated by commas).
+                            Example: '-t nvme' enables all trace events with
+                            the nvme prefix. Disable events by prefixing the
+                            event with a '-'"
+
+_run() {
+  local path_prefix=""
+
+  local short="k:cd:bnfgt:h"
+  local long="kernel-dir:,cloud-init,docker-image:,background,print,reset,gdb,trace:,help"
+
+  if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '-k' | '--kernel-dir' )
+        local kernel_dir="$2"; shift 2
+
+        if [[ ! -d "$kernel_dir" ]]; then
+          _fatal 1 "no such directory: '$kernel_dir'"
+        fi
+        ;;
+
+      '-c' | '--cloud-init' )
+        local do_cloud_init=1; shift
+
+        if [[ ! -f "${VMIMG}/seed.img" ]]; then
+          _fatal 1 "no such file: '${VMIMG}/seed.img'"
+        fi
+        ;;
+
+      '-d' | '--docker-image' )
+        DOCKER_IMAGE="$2"; shift 2
+
+        if ! docker image inspect "$DOCKER_IMAGE" >/dev/null 2>&1; then
+          _fatal 1 "docker image '$DOCKER_IMAGE' does not exist"
+        fi
+
+        path_prefix="/"
+        ;;
+
+      '-b' | '--background' )
+        local do_background=1; shift
+        ;;
+
+      '-n' | '--print' )
+        local do_print=1; shift
+        ;;
+
+      '-f' | '--reset' )
+        RESET=1; shift
+        ;;
+
+      '-g' | '--gdb' )
+        local do_gdb=1; shift
+        ;;
+
+      '-t' | '--trace' )
+        local trace_events="$2"; shift 2
+        ;;
+
+      '-h' | '--help' )
+        _usage "$USAGE" 0
+        ;;
+
+      '--' )
+        shift; break
+        ;;
+
+      * )
+        _usage "$USAGE" 1
+        ;;
+    esac
+  done
+
+  readonly RESET
+
+  _load_vm
+
+  local docker_params=(
+    "--privileged"
+    "-u" "$(id -u):$(getent group kvm | cut -d: -f3)"
+    "--rm"
+    "--name" "$VMNAME"
+    "-p" "2222:2222"
+    "--mount" "type=bind,src=${VMROOT}/state/${VMNAME},dst=/state/${VMNAME}"
+    "--mount" "type=bind,src=${VMROOT}/run/${VMNAME},dst=/run/${VMNAME}"
+    "--mount" "type=bind,src=${VMROOT}/log/${VMNAME},dst=/log/${VMNAME}"
+    "--mount" "type=bind,src=${VMROOT}/img,dst=/img"
+  )
+
+  if [[ ! -f "${VMROOT}/$GUEST_BOOT" && ! -v do_print ]]; then
+    if [[ ! -f "${VMROOT}/$GUEST_BOOT_BASE" ]]; then
+      _fatal 1 "base image '${VMROOT}/${GUEST_BOOT_BASE}' does not exist"
+    fi
+
+    _log "creating boot image ('$GUEST_BOOT') from base ('$GUEST_BOOT_BASE')"
+    _log_named "qemu-img create" qemu-img create -f qcow2 -b "$(basename "$GUEST_BOOT_BASE")" \
+      -F qcow2 "${VMIMG}/$(basename "$GUEST_BOOT")"
+  fi
+
+  if [[ -v do_background && ! -v DOCKER_IMAGE ]]; then
+    _fatal 1 "--background requires --docker-image"
+  fi
+
+  if [[ -v do_gdb && -v DOCKER_IMAGE ]]; then
+    _fatal 1 "--gdb cannot be used with --docker-image"
+  fi
+
+  if [[ -f "${VMRUN}/pidfile" ]]; then
+    _fatal 1 "'${VMRUN}/pidfile' exists; vm might already be running"
+  fi
+
+  local setup_fn
+  setup_fn="$(echo "_setup_${VMNAME}" | tr - _)"
+  if ! declare -f "$setup_fn" >/dev/null; then
+    _fatal 1 "no '$setup_fn' function defined in '$VMCONFIG'"
+  fi
+
+  pushd "$(dirname "$VMCONFIG")" >/dev/null
+  if ! eval "$setup_fn"; then
+    _fatal 1 "could not setup vm '$VMNAME'"
+  fi
+  popd >/dev/null
+
+  for logfile in full stderr qemu.log; do
+    truncate -s 0 "${VMLOG}/${logfile}"
+  done
+
+  if [[ -v do_cloud_init ]]; then
+    qemu_drive_add "cloud-init-seed" \
+      --file "img/seed.img" \
+      --format "raw" \
+      --interface "virtio" \
+      --cdrom
+  fi
+
+  QEMU_PARAMS+=("-pidfile" "${path_prefix}run/${VMNAME}/pidfile")
+
+  if [[ -v kernel_dir ]]; then
+    local cmdline="root=/dev/vda1 console=ttyS0,115200"
+
+    if [[ -v DOCKER_IMAGE ]]; then
+      docker_params+=("--mount" "type=bind,src=$(realpath "$kernel_dir"),dst=/kernel")
+      kernel_dir="/kernel"
+    fi
+
+    # custom kernel
+    QEMU_PARAMS+=("-kernel" "${kernel_dir}/arch/x86_64/boot/bzImage")
+
+    if [[ -v cloud_init_seed ]]; then
+      cmdline="$cmdline ci.datasource=NoCloud"
+    fi
+
+    if [[ -n "$GUEST_KERNEL_APPEND_EXTRA" ]]; then
+      cmdline="$cmdline $GUEST_KERNEL_APPEND_EXTRA"
+    fi
+
+    QEMU_PARAMS+=("-append" "$cmdline")
+    QEMU_PARAMS+=("-virtfs" "local,path=$kernel_dir,security_model=none,readonly,mount_tag=kernel_dir")
+  fi
+
+  if [[ -v do_background ]]; then
+    docker_params+=("--detach")
+
+    # serial and monitor
+    QEMU_PARAMS+=("-serial" "unix:${path_prefix}run/${VMNAME}/console,server,nowait")
+    QEMU_PARAMS+=("-monitor" "unix:${path_prefix}run/${VMNAME}/monitor,server,nowait")
+  else
+    QEMU_PARAMS+=("-serial" "mon:stdio")
+  fi
+
+  # log guest output
+  QEMU_PARAMS+=(
+    "-d" "guest_errors"
+    "-D" "${path_prefix}log/${VMNAME}/qemu.log"
+  )
+
+  if [[ -v trace_events ]]; then
+    if [[ "$trace_events" == "all" ]]; then
+      QEMU_PARAMS+=("-trace" "*")
+    else
+      local _IFS="$IFS"
+      IFS=$','
+      for event in $trace_events; do
+        QEMU_PARAMS+=("-trace" "${event}*")
+      done
+      IFS="$_IFS"
+    fi
+  fi
+
+  params=()
+  if [[ -v DOCKER_IMAGE ]]; then
+    params+=("${docker_params[@]}" "$DOCKER_IMAGE" "${QEMU_PARAMS[@]}")
+  else
+    params+=("${QEMU_PARAMS[@]}")
+  fi
+
+  if [[ -v do_print ]]; then
+    local nargs="${#params[@]}"
+
+    if [[ -v DOCKER_IMAGE ]]; then
+      echo "docker run \\"
+    else
+      echo "$QEMU_SYSTEM_BINARY \\"
+    fi
+    for (( i=0 ; i < nargs ; i++ )); do
+      echo -n "  ${params[i]}"
+
+      if [[ "${params[i+1]+exists}" && "${params[i+1]}" != -* ]]; then
+        echo -n " $(_shell_quote "${params[i+1]}")"
+        (( i++ ))
+      fi
+
+      if [[ $(( i + 1)) -lt "$nargs" ]]; then
+        echo " \\"
+      fi
+    done
+
+    echo
+
+    exit 0
+  fi
+
+  if [[ -v do_gdb ]]; then
+    gdb -ex "handle SIGUSR1 pass noprint" -ex "handle SIGPIPE nostop" --args "$QEMU_SYSTEM_BINARY" "${params[@]}"
+  else
+    if [[ -v DOCKER_IMAGE ]]; then
+      if [[ -v do_background ]]; then
+        _log "launching '$DOCKER_IMAGE' docker container in detached mode"
+        _log "use \`vmctl -c $VMCONFIG ssh\` to connect to it"
+      fi
+
+      if ! docker run "${params[@]}"; then
+        _fatal 1 "docker run error"
+      fi
+
+      if [[ -v do_background ]]; then
+        _log "use \`vmctl -c $VMCONFIG {console,monitor}\` to attach to the console or monitor"
+      fi
+    else
+      $QEMU_SYSTEM_BINARY "${params[@]}"
+    fi
+  fi
+}

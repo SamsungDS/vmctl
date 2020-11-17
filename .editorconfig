@@ -1,0 +1,13 @@
+root = true
+
+[{common/**,cmd/**,lib/**}]
+indent_style = space
+indent_size = 2
+
+[*.conf]
+indent_style = space
+indent_size = 2
+
+[vmctl]
+indent_style = space
+indent_size = 2

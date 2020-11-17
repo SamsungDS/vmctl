@@ -1,0 +1,60 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+USAGE="usage: ${BASENAME} -c CONFIG log [OPTION...]
+
+The \`log\` command is used to view logs from the virtual machine defined by
+the given \`CONFIG\`.
+
+Options:
+  -h, --help            display this help message and exit
+  -f, --follow          output appended data as log grows
+  -t, --truncate        truncate log and exit
+  -m, --mark HINT       add a \"--- MARK <HINT>\" line to the log file and exit"
+
+_log() {
+  local short="f,t,m:,h"
+  local long="follow,truncate,mark:,help"
+
+  if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '-f' | '--follow' )
+        local do_follow=1; shift
+        ;;
+      '-h' | '--help' )
+        _usage "$USAGE" 0
+        ;;
+      '-t' | '--truncate' )
+        truncate -s 0 "${VMLOG}/qemu.log"
+        exit 0
+        ;;
+      '-m' | '--mark' )
+        local hint=$2; shift 2
+        printf -- "--- MARK %s\n" "$hint" >> "${VMLOG}/qemu.log"
+        exit 0
+        ;;
+      '--' )
+        shift; break
+        ;;
+      '*' )
+        _usage "$USAGE" 1
+        ;;
+    esac
+  done
+
+  if [[ -v do_follow ]]; then
+    tail -f "${VMLOG}/qemu.log"
+  else
+    $PAGER "${VMLOG}/qemu.log"
+  fi
+}

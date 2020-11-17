@@ -1,0 +1,150 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+#shellcheck source=lib/qemu/rc
+source "${BASEDIR}/lib/qemu/rc"
+
+qemu_pcie_add_root_port() {
+  local id
+  local chassis
+  local slot
+
+  local long="chassis:,slot:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--chassis' )
+        chassis="$2"; shift 2
+        ;;
+      '--slot' )
+        slot="$2"; shift 2
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "missing port name"
+  fi
+
+  id="$1"
+
+  if [[ ! -v chassis ]]; then
+    _fatal 1 "missing required --chassis parameter"
+  fi
+
+  QEMU_PARAMS+=(
+    "-device" "pcie-root-port,id=${id},chassis=${chassis},slot=${slot:-0}"
+  )
+}
+
+qemu_pcie_add_upstream() {
+  local root
+
+  local long="root:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--root' )
+        root="$2"; shift 2
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "missing port name"
+  fi
+
+  local id
+  id="$1"; shift
+
+  if [[ ! -v root ]]; then
+    _fatal 1 "missing required --root parameter"
+  fi
+
+  QEMU_PARAMS+=(
+    "-device" "x3130-upstream,id=$id,bus=$root"
+  )
+}
+
+qemu_pcie_add_downstream() {
+  local id
+  local upstream
+  local -i chassis
+  local -i slot
+
+  local long="upstream:,chassis:,slot:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--upstream' )
+        upstream="$2"; shift 2
+        ;;
+      '--chassis' )
+        chassis=$2; shift 2
+        ;;
+      '--slot' )
+        slot=$2; shift 2
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "missing port name"
+  fi
+
+  id="$1"; shift
+
+  if [[ ! -v chassis ]]; then
+    _fatal 1 "missing required --chassis parameter"
+  fi
+
+  if [[ ! -v slot ]]; then
+    _fatal 1 "missing required --slot parameter"
+  fi
+
+  QEMU_PARAMS+=(
+    "-device" "xio3130-downstream,id=$id,bus=$upstream,chassis=$chassis,slot=$slot"
+  )
+}

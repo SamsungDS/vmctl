@@ -1,0 +1,10 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+# suppress unused global variable warnings
+_silence_sc2034() {
+  echo "$QEMU_SYSTEM_BINARY $QEMU_TRACE_EVENTS ${GUEST_KERNEL_CMDLINE[*]} $RESET" > /dev/null
+}

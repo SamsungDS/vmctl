@@ -1,0 +1,50 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+USAGE="usage: ${BASENAME} -c CONFIG vars
+
+The \`vars\` command returns information about the virtual machine defined by
+the given \`CONFIG\`. The output is suitable for passing to \`eval\`."
+
+_vars() {
+  local short="h"
+  local long="help"
+
+  if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '-h' | '--help' )
+        _usage "$USAGE" 0
+        ;;
+      '--' )
+        shift; break
+        ;;
+      '*' )
+        _usage "$USAGE" 1
+        ;;
+    esac
+  done
+
+  echo "VMNAME=${VMNAME}"
+  echo "VMROOT=$(realpath "${VMROOT}")"
+  echo "VMSTATE=$(realpath "${VMSTATE}")"
+  echo "VMLOG=$(realpath "${VMLOG}")"
+  echo "VMRUN=$(realpath "${VMRUN}")"
+
+  if [[ -S "${VMRUN}/monitor" ]]; then
+    echo "VMMONITOR=$(realpath "${VMRUN}/monitor")"
+  fi
+
+  if [[ -S "${VMRUN}/console" ]]; then
+    echo "VMCONSOLE=$(realpath "${VMRUN}/console")"
+  fi
+}

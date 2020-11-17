@@ -1,0 +1,81 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+USAGE="usage: ${BASENAME} -c CONFIG ssh [OPTION...] [COMMAND]
+
+The \`ssh\` command opens an ssh connection to the running virtual machine
+defined by the given \`CONFIG\`.
+
+Options:
+  -h, --help     display this help message and exit
+  -w, --wait     wait until an ssh connection is established
+  -p, --port     port to connect to (default: \"$GUEST_SSH_PORT\")
+  -l, --login    the user to log in as (default: \"$GUEST_SSH_USER\")"
+
+_ssh() {
+  _require_program ssh
+
+  local short="+w,p:,l:,h"
+  local long="wait,port:,login:,help"
+
+  if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  local port="$GUEST_SSH_PORT"
+  local user="$GUEST_SSH_USER"
+
+  while true; do
+    case "$1" in
+      '-w' | '--wait' )
+        local do_wait=1; shift
+        ;;
+      '-p' | '--port' )
+        port="$2"; shift 2
+        ;;
+      '-l' | '--login' )
+        user="$2"; shift 2
+        ;;
+      '-h' | '--help' )
+        _usage "$USAGE" 0
+        ;;
+      '--' )
+        shift; break
+        ;;
+      '*' )
+        _usage "$USAGE" 1
+        ;;
+    esac
+  done
+
+  _load_vm
+
+  if ! _is_running; then
+    _fatal 1 "$VMNAME does not appear to be running"
+  fi
+
+  local args=(
+    "-p" "$port"
+    "-l" "$user"
+    "-o" "StrictHostKeyChecking=no"
+    "-o" "UserKnownHostsFile=/dev/null"
+  )
+
+  if [[ -v do_wait ]]; then
+    echo -n "waiting for ssh to become available"
+
+    until ssh "${args[@]}" -o ConnectTimeout=1 localhost echo ok 2>/dev/null; do
+      echo -n .
+      sleep 1
+    done
+  fi
+
+  #shellcheck disable=SC2029
+  ssh "${args[@]}" localhost "$@"
+}

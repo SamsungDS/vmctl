@@ -1,0 +1,61 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+USAGE="usage: ${BASENAME} -c CONFIG monitor COMMAND
+
+The \`monitor\` command is used to run commands in the QEMU monitor of a
+running virtual machine defined by the given \`CONFIG\`. If no \`COMMAND\` is
+given, attach interactively to the monitor."
+
+_monitor() {
+  _require_program socat
+
+  local short="h"
+  local long="help"
+
+  if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '-h' | '--help' )
+        _usage "$USAGE" 0
+        ;;
+      '--' )
+        shift; break
+        ;;
+      '*' )
+        _usage "$USAGE" 1
+        ;;
+    esac
+  done
+
+  if ! _is_running; then
+    _fatal 1 "$VMNAME does not appear to be running"
+  fi
+
+  if ! _is_daemonized; then
+    _fatal 1 "$VMNAME is running interactively; attach to monitor from console using 'Ctrl-a c'"
+  fi
+
+  local args=(
+    "-,raw,echo=0,rawer,escape=0x0f"
+    "unix-connect:${VMRUN}/monitor"
+  )
+
+  if [[ $# -gt 0 ]]; then
+    echo "$@" | socat "${args[@]}"
+  else
+    _log "use Ctrl-O to detach from monitor"
+    if ! socat "${args[@]}"; then
+      _fatal 1 "could not attach to monitor"
+    fi
+  fi
+}

@@ -1,0 +1,50 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Klaus Jensen <its@irrelevant.dk>
+
+USAGE="usage: ${BASENAME} -c CONFIG console
+
+The \`console\` attaches to the serial console of the running virtual machine
+defined by the given \`CONFIG\`."
+
+_console() {
+  _require_program minicom
+
+  local short="h"
+  local long="help"
+
+  if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '-h' | '--help' )
+        _usage "$USAGE" 0
+        ;;
+      '--' )
+        shift; break
+        ;;
+      '*' )
+        _usage "$USAGE" 1
+        ;;
+    esac
+  done
+
+  if ! _is_running; then
+    _fatal 1 "vm '$VMNAME' does not appear to be running"
+  fi
+
+  local args=(
+    "-,raw,echo=0,rawer,escape=0x0f"
+    "unix-connect:${VMRUN}/console"
+  )
+
+  _log "use Ctrl-O to detach from console"
+  socat "${args[@]}"
+}
