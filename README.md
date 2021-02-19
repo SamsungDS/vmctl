@@ -1,6 +1,6 @@
-# vmctl
+# :wrench: vmctl
 
-:wrench: QEMU NVMe Testing Galore!
+QEMU NVMe Testing Galore!
 
 `vmctl` is a tool to rapidly getting preconfigured QEMU virtual machines up and
 running.
@@ -24,7 +24,7 @@ running.
 5. You probably want to use the `q35-base.conf` configuration file to base your
    own VMs on.
 
-       $ ln -s /path/to/vmctl/examples/vm/q35-base.conf q35-base.conf
+       $ cp /path/to/vmctl/examples/vm/q35-base.conf .
 
 6. Start from an example and edit it as you see fit.
 
@@ -32,14 +32,18 @@ running.
 
 7. Prepare a boot image. The `q35-base.conf` configuration will look a base
    image in `img/base.qcow2`. You can use [archbase][archbase] to build a lean
-   Arch Linux base image or grab an [Ubuntu cloud image][ubuntu-cloud-image] if
-   that's your vice.
+   Arch Linux base image or grab a QCOW2-based [Ubuntu cloud image][ubuntu-cloud-image]
+   if that's your vice.
+
+   In the case of a standard "cloud image", you probably want to resize it
+   since it is usually shrinked to be as small as possible by default.
+
+       $ qemu-img resize img/base.qcow2 8G
 
    **Note** The example `nvme.conf` will define `GUEST_BOOT="img/nvme.qcow2"`.
    You do not need to provide that image - if it is not there `$GUEST_BOOT`
-   will be a shallow image derived from `img/base.qcow2` by the `q35-base.conf`
-   configuration. So, if you ever need to reset to the "base" state, just
-   remove the `img/nvme.qcow2` image.
+   will be a differential image backed by `img/base.qcow2`. So, if you ever
+   need to reset to the "base" state, just remove the `img/nvme.qcow2` image.
 
 [archbase]: https://github.com/OpenMPDK/archbase
 [ubuntu-cloud-image]: https://cloud-images.ubuntu.com
@@ -59,6 +63,23 @@ the `CONFIG` config file in interactive mode such that the VM serial output is
 sent to standard out. The QEMU monitor is multiplexed to standard out, so you
 can access it by issuing `Ctrl-a c`.
 
+### cloud-init
+
+If your chosen base image is meant to be configured through [cloud-init][cloud-init],
+you can use the included cloud-config helper script to generate a basic
+cloud-init seed image:
+
+    $ ./contrib/generate-cloud-config-seed.sh ~/.ssh/id_rsa.pub
+
+This will generate a simple cloud-init seed image that will set up the image
+with a default `vmuser` account that can be logged into using the given public
+key. Place the output image (`seed.img`) in `img/` and pass the `--cloud-init`
+(short: `'-c'`) option to `vmctl run` to initialize the image on first boot:
+
+    $ vmctl -c CONFIG run -c
+
+[cloud-init]: https://cloudinit.readthedocs.io/en/latest/
+
 ### Tracing
 
 The `--trace` (short: `-t`) option can be used to enable tracing inside QEMU.
@@ -67,7 +88,7 @@ any other messages written to standard error by the QEMU process). For example,
 to enable all trace events for the NVMe device, but disabling anything related
 to IRQs, use
 
-    vmctl run -t 'pci_nvme,-pci_nvme_irq'
+    vmctl -c CONFIG run -t 'pci_nvme,-pci_nvme_irq'
 
 `vmctl` inserts an implicit `*`-suffix such that all traces with the given
 prefix is traced.
@@ -81,6 +102,7 @@ being booted, this allows it to use kernel modules from that directory. The
 image built by `archbase` has support for this built-in, but see
 `contrib/systemd` for a systemd service that should be usable on most
 distributions.
+
 
 ## License
 
