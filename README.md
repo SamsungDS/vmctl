@@ -22,15 +22,22 @@ running.
        $ mkdir $HOME/vms; cd $HOME/vms
 
 5. You probably want to use the `q35-base.conf` configuration file to base your
-   own VMs on.
+   own VMs on, so copy it.
 
        $ cp /path/to/vmctl/examples/vm/q35-base.conf .
 
-6. Start from an example and edit it as you see fit.
+6. When you have a lot of configuration there is probably something you'd want
+   to share between them. Examples are `QEMU_SYSTEM_BINARY` and
+   `GUEST_KERNEL_APPEND_EXTRA`. The examples (including the default
+   `q35-base.conf`) assumes the presence of such a `common.conf` file:
+
+       $ cp /path/to/vmctl/examples/vm/common.conf .
+
+7. Start from an example and edit it as you see fit.
 
        $ cp /path/to/vmctl/examples/vm/nvme.conf .
 
-7. Prepare a boot image. The `q35-base.conf` configuration will look a base
+8. Prepare a boot image. The `q35-base.conf` configuration will look a base
    image in `img/base.qcow2`. You can use [archbase][archbase] to build a lean
    Arch Linux base image or grab a QCOW2-based [Ubuntu cloud image][ubuntu-cloud-image]
    if that's your vice.

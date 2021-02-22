@@ -5,5 +5,4 @@ ifndef SHELLCHECK
 	$(error "cannot find shellcheck; install to run check")
 endif
 	shellcheck -a -x \
-		vmctl cmd/* common/* lib/qemu/* \
-		examples/vm/*.conf
+		vmctl cmd/* common/* lib/qemu/*
