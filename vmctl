@@ -89,8 +89,6 @@ _main() {
     _usage "$USAGE" 1
   fi
 
-  _load_vm
-
   #shellcheck disable=SC1090
   source "${BASEDIR}/cmd/${subcmd}"
 

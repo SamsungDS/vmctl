@@ -24,7 +24,7 @@ Options:
   -k, --kernel-dir DIR      directory containing the kernel source. The
                             directory will be made available to the vm as a p9
                             virtfs with mount tag 'kernel_dir'
-  -c, --cloud-init          use '${VMROOT}/img/seed.img' as a cloud-init seed
+  -c, --cloud-init          use 'img/seed.img' as a cloud-init seed
   -d, --docker-image IMAGE  docker image to use instead of qemu system binary
   -b, --background          start the docker container in detached mode
   -g, --gdb                 launch under gdb (only for non-docker)

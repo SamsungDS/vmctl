@@ -34,6 +34,8 @@ _vars() {
     esac
   done
 
+  _load_vm
+
   echo "VMNAME=${VMNAME}"
   echo "VMROOT=$(realpath "${VMROOT}")"
   echo "VMSTATE=$(realpath "${VMSTATE}")"

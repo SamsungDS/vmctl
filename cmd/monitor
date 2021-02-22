@@ -37,6 +37,8 @@ _monitor() {
     esac
   done
 
+  _load_vm
+
   if ! _is_running; then
     _fatal 1 "$VMNAME does not appear to be running"
   fi

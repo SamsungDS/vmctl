@@ -36,6 +36,8 @@ _console() {
     esac
   done
 
+  _load_vm
+
   if ! _is_running; then
     _fatal 1 "vm '$VMNAME' does not appear to be running"
   fi
