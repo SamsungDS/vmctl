@@ -85,10 +85,10 @@ qemu_drive_add() {
   while true; do
     case "$1" in
       '--file' )
-        local file="$2"; shift 2
+        local file="/$2"; shift 2
 
-        if [[ -v DOCKER_IMAGE ]]; then
-          file="/${file}"
+        if [[ ! -v DOCKER_IMAGE ]]; then
+          file="${VMROOT}${file}"
         fi
         ;;
 

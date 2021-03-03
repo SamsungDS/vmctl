@@ -69,8 +69,6 @@ _run() {
         if ! docker image inspect "$DOCKER_IMAGE" >/dev/null 2>&1; then
           _fatal 1 "docker image '$DOCKER_IMAGE' does not exist"
         fi
-
-        path_prefix="/"
         ;;
 
       '-b' | '--background' )
@@ -110,6 +108,10 @@ _run() {
   readonly RESET
 
   _load_vm
+
+  if [[ ! -v DOCKER_IMAGE ]]; then
+    path_prefix="$VMROOT"
+  fi
 
   local docker_params=(
     "--privileged"
@@ -173,7 +175,7 @@ _run() {
       --cdrom
   fi
 
-  QEMU_PARAMS+=("-pidfile" "${path_prefix}run/${VMNAME}/pidfile")
+  QEMU_PARAMS+=("-pidfile" "${path_prefix}/run/${VMNAME}/pidfile")
 
   if [[ -v kernel_dir ]]; then
     local cmdline="root=/dev/vda1 console=ttyS0,115200"
@@ -202,8 +204,8 @@ _run() {
     docker_params+=("--detach")
 
     # serial and monitor
-    QEMU_PARAMS+=("-serial" "unix:${path_prefix}run/${VMNAME}/console,server,nowait")
-    QEMU_PARAMS+=("-monitor" "unix:${path_prefix}run/${VMNAME}/monitor,server,nowait")
+    QEMU_PARAMS+=("-serial" "unix:${path_prefix}/run/${VMNAME}/console,server,nowait")
+    QEMU_PARAMS+=("-monitor" "unix:${path_prefix}/run/${VMNAME}/monitor,server,nowait")
   else
     QEMU_PARAMS+=("-serial" "mon:stdio")
   fi
@@ -211,7 +213,7 @@ _run() {
   # log guest output
   QEMU_PARAMS+=(
     "-d" "guest_errors"
-    "-D" "${path_prefix}log/${VMNAME}/qemu.log"
+    "-D" "${path_prefix}/log/${VMNAME}/qemu.log"
   )
 
   if [[ -v trace_events ]]; then
