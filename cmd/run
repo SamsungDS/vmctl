@@ -24,7 +24,7 @@ Options:
   -k, --kernel-dir DIR      directory containing the kernel source. The
                             directory will be made available to the vm as a p9
                             virtfs with mount tag 'kernel_dir'
-  -c, --cloud-init          use 'img/seed.img' as a cloud-init seed
+  -c, --cloud-init          use '\${VMIMG}/seed.img' as a cloud-init seed
   -d, --docker-image IMAGE  docker image to use instead of qemu system binary
   -b, --background          start the docker container in detached mode
   -g, --gdb                 launch under gdb (only for non-docker)
@@ -61,10 +61,6 @@ _run() {
 
       '-c' | '--cloud-init' )
         local do_cloud_init=1; shift
-
-        if [[ ! -f "${VMIMG}/seed.img" ]]; then
-          _fatal 1 "no such file: '${VMIMG}/seed.img'"
-        fi
         ;;
 
       '-d' | '--docker-image' )
@@ -166,6 +162,10 @@ _run() {
   done
 
   if [[ -v do_cloud_init ]]; then
+    if [[ ! -f "${VMIMG}/seed.img" ]]; then
+      _fatal 1 "no such file: '${VMIMG}/seed.img'"
+    fi
+
     qemu_drive_add "cloud-init-seed" \
       --file "img/seed.img" \
       --format "raw" \
