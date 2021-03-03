@@ -43,7 +43,7 @@ _console() {
   fi
 
   local args=(
-    "-,raw,echo=0,rawer,escape=0x0f"
+    "-,raw,echo=0,escape=0x0f"
     "unix-connect:${VMRUN}/console"
   )
 
