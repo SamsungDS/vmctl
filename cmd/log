@@ -11,13 +11,11 @@ the given \`CONFIG\`.
 
 Options:
   -h, --help            display this help message and exit
-  -f, --follow          output appended data as log grows
-  -t, --truncate        truncate log and exit
-  -m, --mark HINT       add a \"--- MARK <HINT>\" line to the log file and exit"
+  -f, --follow          output appended data as log grows"
 
 _log() {
-  local short="f,t,m:,h"
-  local long="follow,truncate,mark:,help"
+  local short="f,h"
+  local long="follow,help"
 
   if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
     exit 1
@@ -33,15 +31,6 @@ _log() {
         ;;
       '-h' | '--help' )
         _usage "$USAGE" 0
-        ;;
-      '-t' | '--truncate' )
-        truncate -s 0 "${VMLOG}/qemu.log"
-        exit 0
-        ;;
-      '-m' | '--mark' )
-        local hint=$2; shift 2
-        printf -- "--- MARK %s\n" "$hint" >> "${VMLOG}/qemu.log"
-        exit 0
         ;;
       '--' )
         shift; break
