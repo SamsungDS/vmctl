@@ -85,7 +85,27 @@ key. Place the output image (`seed.img`) in `img/` and pass the `--cloud-init`
 
     $ vmctl -c CONFIG run -c
 
+cloud-init will automatically power off the virtual machine when it has been
+configured.
+
 [cloud-init]: https://cloudinit.readthedocs.io/en/latest/
+
+
+### SSH, Serial console and QEMU monitor
+
+By default, `vmctl` will launch the guest such that the serial console and the
+QEMU monitor is multiplexed to standard out. This means that you will see the
+serial console output directly on the screen.
+
+To connect to the guest with ssh, do
+
+    $ vmctl -c CONFIG ssh
+
+If you start the guest in the background (`-b`, `--backgroun`), you can access
+the console and monitor using
+
+    $ vmctl -c CONFIG console
+    $ vmctl -c CONFIG monitor
 
 ### Tracing
 
@@ -106,7 +126,9 @@ Finally, the `--kernel-dir` (short: `-k`) can be used to point to a custom
 Linux kernel to boot directly. This directory will be made available to the VM
 as a p9 virtual file system with mount tag `kernel_dir`. If supported by the VM
 being booted, this allows it to use kernel modules from that directory. The
-image built by `archbase` has support for this built-in, but see
+image built by `archbase` has support for this built-in and the
+`contrib/generate-cloud-config-seed.sh` script will generate a cloud-init seed
+that configures the image to support this. In non-cloud-init settings, see
 `contrib/systemd` for a systemd service that should be usable on most
 distributions.
 
