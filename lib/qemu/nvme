@@ -37,8 +37,7 @@ qemu_nvme_add_subsys() {
 
   local id="$1"; shift
 
-  params="nvme-subsys,id=${id}"
-
+  local params="nvme-subsys,id=${id}"
   if [[ -v nqn ]]; then
     params="${params},nqn=${nqn}"
   fi
@@ -59,16 +58,16 @@ qemu_nvme_add_ctrl() {
   while true; do
     case "$1" in
       '--serial' )
-        serial="$2"; shift 2
+        local serial="$2"; shift 2
         ;;
       '--port' )
-        port="$2"; shift 2
+        local port="$2"; shift 2
         ;;
       '--subsys' )
-        subsys="$2"; shift 2
+        local subsys="$2"; shift 2
         ;;
       '--extra' )
-        extra="$2"; shift 2;
+        local extra="$2"; shift 2;
         ;;
       '--' )
         shift; break
@@ -83,14 +82,13 @@ qemu_nvme_add_ctrl() {
     _fatal 1 "${FUNCNAME[0]}: missing id"
   fi
 
-  id="$1"; shift
+  local id="$1"; shift
 
   if [[ ! -v serial ]]; then
     _fatal 1 "${FUNCNAME[0]}: missing required '--serial' argument"
   fi
 
-  params="nvme,id=${id},serial=${serial}"
-
+  local params="nvme,id=${id},serial=${serial}"
   if [[ -v port ]]; then
     params="${params},bus=${port}"
   fi
@@ -107,11 +105,6 @@ qemu_nvme_add_ctrl() {
 }
 
 qemu_nvme_add_ns() {
-  local nsid
-  local ctrl
-  local size
-  local extra
-
   local long="nsid:,ctrl:,subsys:,size:,extra:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
@@ -124,19 +117,19 @@ qemu_nvme_add_ns() {
   while true; do
     case "$1" in
       '--nsid' )
-        nsid="$2"; shift 2
+        local nsid="$2"; shift 2
         ;;
       '--ctrl' )
-        ctrl="$2"; shift 2
+        local ctrl="$2"; shift 2
         ;;
       '--subsys' )
-        subsys="$2"; shift 2
+        local subsys="$2"; shift 2
         ;;
       '--size' )
-        size="$2"; shift 2
+        local size="$2"; shift 2
         ;;
       '--extra' )
-        extra="$2"; shift 2;
+        local extra="$2"; shift 2;
         ;;
       '--' )
         shift; break
@@ -151,7 +144,7 @@ qemu_nvme_add_ns() {
     _fatal 1 "missing namespace name"
   fi
 
-  id="$1"; shift
+  local id="$1"; shift
 
   if [[ ! -v nsid ]]; then
     _fatal 1 "missing 'nsid' argument"
@@ -175,8 +168,7 @@ qemu_nvme_add_ns() {
 
   qemu_drive_add "$id" --file "state/${VMNAME}/${id}.img" --discard
 
-  params="nvme-ns,id=$id,nsid=$nsid,drive=$id"
-
+  local params="nvme-ns,id=$id,nsid=$nsid,drive=$id"
   if [[ -v ctrl ]]; then
     params="${params},bus=$ctrl"
   else

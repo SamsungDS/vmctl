@@ -8,10 +8,6 @@
 source "${BASEDIR}/lib/qemu/rc"
 
 qemu_pcie_add_root_port() {
-  local id
-  local chassis
-  local slot
-
   local long="chassis:,slot:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
@@ -24,10 +20,10 @@ qemu_pcie_add_root_port() {
   while true; do
     case "$1" in
       '--chassis' )
-        chassis="$2"; shift 2
+        local chassis="$2"; shift 2
         ;;
       '--slot' )
-        slot="$2"; shift 2
+        local slot="$2"; shift 2
         ;;
       '--' )
         shift; break
@@ -42,7 +38,7 @@ qemu_pcie_add_root_port() {
     _fatal 1 "missing port name"
   fi
 
-  id="$1"
+  local id="$1"
 
   if [[ ! -v chassis ]]; then
     _fatal 1 "missing required --chassis parameter"
@@ -54,8 +50,6 @@ qemu_pcie_add_root_port() {
 }
 
 qemu_pcie_add_upstream() {
-  local root
-
   local long="root:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
@@ -68,7 +62,7 @@ qemu_pcie_add_upstream() {
   while true; do
     case "$1" in
       '--root' )
-        root="$2"; shift 2
+        local root="$2"; shift 2
         ;;
       '--' )
         shift; break
@@ -83,8 +77,7 @@ qemu_pcie_add_upstream() {
     _fatal 1 "missing port name"
   fi
 
-  local id
-  id="$1"; shift
+  local id="$1"; shift
 
   if [[ ! -v root ]]; then
     _fatal 1 "missing required --root parameter"
@@ -96,11 +89,6 @@ qemu_pcie_add_upstream() {
 }
 
 qemu_pcie_add_downstream() {
-  local id
-  local upstream
-  local -i chassis
-  local -i slot
-
   local long="upstream:,chassis:,slot:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
@@ -113,13 +101,13 @@ qemu_pcie_add_downstream() {
   while true; do
     case "$1" in
       '--upstream' )
-        upstream="$2"; shift 2
+        local upstream="$2"; shift 2
         ;;
       '--chassis' )
-        chassis=$2; shift 2
+        local chassis="$2"; shift 2
         ;;
       '--slot' )
-        slot=$2; shift 2
+        local slot="$2"; shift 2
         ;;
       '--' )
         shift; break
@@ -134,7 +122,7 @@ qemu_pcie_add_downstream() {
     _fatal 1 "missing port name"
   fi
 
-  id="$1"; shift
+  local id="$1"; shift
 
   if [[ ! -v chassis ]]; then
     _fatal 1 "missing required --chassis parameter"
