@@ -73,7 +73,7 @@ qemu_drive_add() {
   local discard="off"
   local media="disk"
 
-  local long="file:,format:,interface:,discard,cdrom"
+  local long="file:,format:,interface:,discard,cdrom,create,size:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -86,10 +86,6 @@ qemu_drive_add() {
     case "$1" in
       '--file' )
         local file="/$2"; shift 2
-
-        if [[ ! -v DOCKER_IMAGE ]]; then
-          file="${VMROOT}${file}"
-        fi
         ;;
 
       '--format' )
@@ -108,6 +104,14 @@ qemu_drive_add() {
         media="cdrom"; shift
         ;;
 
+      '--create' )
+        local do_create=1; shift
+        ;;
+
+      '--size' )
+        local size="$2"; shift 2;
+        ;;
+
       '--' )
         shift; break;
         ;;
@@ -122,5 +126,25 @@ qemu_drive_add() {
     _fatal 1 "missing drive id"
   fi
 
-  QEMU_PARAMS+=("-drive" "id=$1,file=$file,format=$format,if=$intf,discard=$discard,media=$media")
+  local id="$1"
+
+  if [[ ! -v file ]]; then
+    local file="/state/${VMNAME}/${id}.img"
+  fi
+
+  if [[ ! -v DOCKER_IMAGE ]]; then
+    file="${VMROOT}${file}"
+  fi
+
+  if [[ -v do_create ]]; then
+    if [[ ! -v size ]]; then
+      _fatal 1 "--create requires --size"
+    fi
+
+    if [[ ! -f "${VMSTATE}/${id}.img" || -v RESET ]]; then
+      _create_image "${VMSTATE}/${id}.img" --size "$size" --force
+    fi
+  fi
+
+  QEMU_PARAMS+=("-drive" "id=${id},file=$file,format=$format,if=$intf,discard=$discard,media=$media")
 }
