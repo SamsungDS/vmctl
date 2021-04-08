@@ -158,7 +158,8 @@ _load_vm() {
   fi
 
   VMNAME="$(basename "${VMCONFIG%.conf}")"
-  VMROOT="$(dirname "$(realpath -s "$VMCONFIG")")"
+  VMROOT="$(pwd)"
+  VMCONFIGDIR="$(dirname "$(realpath -s "$VMCONFIG")")"
 
   VMIMG="${VMROOT}/img"
   VMSTATE="${VMROOT}/state/${VMNAME}"
@@ -167,7 +168,7 @@ _load_vm() {
 
   mkdir -p "$VMSTATE" "$VMRUN" "$VMLOG"
 
-  pushd "$VMROOT" >/dev/null || _fatal $? "could not change directory"
+  pushd "$VMCONFIGDIR" >/dev/null || _fatal $? "could not change directory"
 
   #shellcheck disable=SC1090
   source "$(basename "${VMCONFIG}")"
