@@ -105,7 +105,7 @@ qemu_nvme_add_ctrl() {
 }
 
 qemu_nvme_add_ns() {
-  local long="nsid:,ctrl:,subsys:,size:,extra:"
+  local long="nsid:,ctrl:,size:,extra:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -121,9 +121,6 @@ qemu_nvme_add_ns() {
         ;;
       '--ctrl' )
         local ctrl="$2"; shift 2
-        ;;
-      '--subsys' )
-        local subsys="$2"; shift 2
         ;;
       '--size' )
         local size="$2"; shift 2
@@ -146,33 +143,19 @@ qemu_nvme_add_ns() {
 
   local id="$1"; shift
 
-  if [[ ! -v nsid ]]; then
-    _fatal 1 "missing 'nsid' argument"
-  fi
-
-  if [[ ! ( -v ctrl || -v subsys ) ]]; then
-    _fatal 1 "'ctrl' or 'subsys' argument must be specified"
-  fi
-
-  if [[ -v ctrl && -v subsys ]]; then
-    _fatal 1 "only one of 'ctrl' or 'subsys' may be specified"
-  fi
-
   if [[ ! -v size ]]; then
     _fatal 1 "missing required 'size' argument"
   fi
 
-  if [[ ! -f "${VMSTATE}/${id}.img" || -v RESET ]]; then
-    _create_image "${VMSTATE}/${id}.img" --size "$size" --force
-  fi
+  qemu_drive_add "$id" --create --size "$size" --discard
 
-  qemu_drive_add "$id" --file "state/${VMNAME}/${id}.img" --discard
-
-  local params="nvme-ns,id=$id,nsid=$nsid,drive=$id"
+  local params="nvme-ns,id=$id,drive=$id"
   if [[ -v ctrl ]]; then
     params="${params},bus=$ctrl"
-  else
-    params="${params},subsys=$subsys"
+  fi
+
+  if [[ -v nsid ]]; then
+    params="${params},nsid=$nsid"
   fi
 
   if [[ -v extra ]]; then
