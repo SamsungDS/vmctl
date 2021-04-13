@@ -25,6 +25,8 @@ See \`vmctl -c CONFIG <command> --help\` for usage on individual commands.
 Options:
   -c, --config    virtual machine configuration to use; required for most
                   commands
+  -b, --basedir   set the base machine directory; defaults to \$VMCTL_VMROOT
+                  (or the current directory if unset)
 
 Commands:
   run             launch a vm configuration
@@ -38,8 +40,8 @@ Commands:
                   variables about the setup"
 
 _main() {
-  local short="c:h"
-  local long="config:,help"
+  local short="b:c:h"
+  local long="basedir:,config:,help"
 
   if ! tmp=$(getopt -o "+${short}" --long "$long" -n "${BASH_SOURCE[0]}" -- "$@"); then
     exit 1
@@ -56,6 +58,14 @@ _main() {
         fi
 
         VMCONFIG="$2"; shift 2
+        ;;
+
+      '-b' | '--basedir' )
+        if [[ ! -d "$2" ]]; then
+          _fatal 1 "invalid base directory '$2'"
+        fi
+
+        VMCTL_VMROOT="$2"; shift 2
         ;;
 
       '-h' | '--help' )

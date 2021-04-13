@@ -158,7 +158,7 @@ _load_vm() {
   fi
 
   VMNAME="$(basename "${VMCONFIG%.conf}")"
-  VMROOT="$(pwd)"
+  VMROOT="${VMCTL_VMROOT:=$(pwd)}"
   VMCONFIGDIR="$(dirname "$(realpath -s "$VMCONFIG")")"
 
   VMIMG="${VMROOT}/img"
