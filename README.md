@@ -101,7 +101,7 @@ To connect to the guest with ssh, do
 
     $ vmctl -c CONFIG ssh
 
-If you start the guest in the background (`-b`, `--backgroun`), you can access
+If you start the guest in the background (`-b`, `--background`), you can access
 the console and monitor using
 
     $ vmctl -c CONFIG console
