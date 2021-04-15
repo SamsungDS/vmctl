@@ -105,7 +105,7 @@ qemu_nvme_add_ctrl() {
 }
 
 qemu_nvme_add_ns() {
-  local long="nsid:,ctrl:,size:,extra:"
+  local long="nsid:,ctrl:,size:,extra:,no-create-drive"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -125,6 +125,9 @@ qemu_nvme_add_ns() {
       '--size' )
         local size="$2"; shift 2
         ;;
+      '--no-create-drive' )
+        local no_create_drive=1; shift
+        ;;
       '--extra' )
         local extra="$2"; shift 2
         ;;
@@ -143,11 +146,13 @@ qemu_nvme_add_ns() {
 
   local id="$1"; shift
 
-  if [[ ! -v size ]]; then
-    _fatal 1 "missing required 'size' argument"
-  fi
+  if [[ ! -v no_create_drive ]]; then
+    if [[ ! -v size ]]; then
+      _fatal 1 "missing required 'size' argument"
+    fi
 
-  qemu_drive_add "$id" --create --size "$size" --discard
+    qemu_drive_add "$id" --create --size "$size" --discard
+  fi
 
   local params="nvme-ns,id=$id,drive=$id"
   if [[ -v ctrl ]]; then
