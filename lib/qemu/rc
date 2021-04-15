@@ -142,7 +142,7 @@ qemu_drive_add() {
     fi
 
     if [[ ! -f "${VMSTATE}/${id}.img" || -v RESET ]]; then
-      _create_image "${VMSTATE}/${id}.img" --size "$size" --force
+      _create_image "${VMSTATE}/${id}.img" --size "$size" --format "$format" --force
     fi
   fi
 
