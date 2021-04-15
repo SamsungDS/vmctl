@@ -86,7 +86,7 @@ _error() {
 
 _fatal() {
   local rc="$1"; shift
-  _log_frame err 2 "$@"
+  _log_frame fatal 2 "$@"
   exit "$rc"
 }
 
