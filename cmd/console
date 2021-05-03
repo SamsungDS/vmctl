@@ -10,7 +10,7 @@ The \`console\` attaches to the serial console of the running virtual machine
 defined by the given \`CONFIG\`."
 
 _console() {
-  _require_program minicom
+  _require_program socat
 
   local short="h"
   local long="help"
