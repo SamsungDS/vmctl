@@ -197,7 +197,7 @@ _run() {
     fi
 
     QEMU_PARAMS+=("-append" "$cmdline")
-    QEMU_PARAMS+=("-virtfs" "local,path=$kernel_dir,security_model=none,readonly,mount_tag=kernel_dir")
+    QEMU_PARAMS+=("-virtfs" "local,path=$kernel_dir,security_model=none,readonly=on,mount_tag=kernel_dir")
   fi
 
   if [[ -v do_background ]]; then
