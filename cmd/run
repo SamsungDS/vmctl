@@ -118,7 +118,7 @@ _run() {
     "-u" "$(id -u):$(getent group kvm | cut -d: -f3)"
     "--rm"
     "--name" "$VMNAME"
-    "-p" "2222:2222"
+    "-p" "${GUEST_SSH_PORT}:${GUEST_SSH_PORT}"
     "--mount" "type=bind,src=${VMROOT}/state/${VMNAME},dst=/state/${VMNAME}"
     "--mount" "type=bind,src=${VMROOT}/run/${VMNAME},dst=/run/${VMNAME}"
     "--mount" "type=bind,src=${VMROOT}/log/${VMNAME},dst=/log/${VMNAME}"
