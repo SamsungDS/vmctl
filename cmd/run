@@ -144,7 +144,12 @@ _run() {
   fi
 
   if [[ -f "${VMRUN}/pidfile" ]]; then
-    _fatal 1 "'${VMRUN}/pidfile' exists; vm might already be running"
+    if pidof "$QEMU_SYSTEM_BINARY" >/dev/null; then 
+      _fatal 1 "'${VMRUN}/pidfile' exists; vm might already be running"
+    else
+      _log "removing the stale '${VMRUN}/pidfile'"
+      rm -f "${VMRUN}/pidfile"
+    fi
   fi
 
   local setup_fn
