@@ -1,5 +1,7 @@
 # :wrench: vmctl
 
+[![Build Status](https://github.com/OpenMPDK/vmctl/workflows/ci/badge.svg)](https://github.com/OpenMPDK/vmctl/actions)
+
 QEMU NVMe Testing Galore!
 
 `vmctl` is a tool to rapidly getting preconfigured QEMU virtual machines up and
