@@ -45,6 +45,122 @@ qemu_nvme_add_subsys() {
   QEMU_PARAMS+=("-device" "$params")
 }
 
+qemu_nvme_add_subsystem_object() {
+  local long="subnqn:,extra:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--subnqn' )
+        local subnqn="$2"; shift 2
+        ;;
+      '--extra' )
+        local extra="$2"; shift 2;
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "${FUNCNAME[0]}: missing id"
+  fi
+
+  local id="$1"; shift
+
+  local params="x-nvme-subsystem,id=${id}"
+  if [[ -v subnqn ]]; then
+    params="${params},subnqn=${subnqn}"
+  fi
+
+  if [[ -v extra ]]; then
+    params="${params},${extra}"
+  fi
+
+  QEMU_PARAMS+=("-object" "$params")
+}
+
+qemu_nvme_add_ctrlx() {
+  local long="serial:,port:,subsys:,admin,extra:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--serial' )
+        local serial="$2"; shift 2
+        ;;
+      '--port' )
+        local port="$2"; shift 2
+        ;;
+      '--subsys' )
+        local subsys="$2"; shift 2
+        ;;
+      '--admin' )
+        local admin=1; shift
+        ;;
+      '--extra' )
+        local extra="$2"; shift 2;
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "${FUNCNAME[0]}: missing id"
+  fi
+
+  local id="$1"; shift
+
+  local params=
+
+  if [[ -v admin ]]; then
+    params="x-nvme-ctrl-admin"
+  else
+    params="x-nvme-ctrl"
+  fi
+
+  params="${params},id=${id}"
+
+  if [[ -v port ]]; then
+    params="${params},bus=${port}"
+  fi
+
+  if [[ -v serial ]]; then
+    params="${params},serial=${serial}"
+  fi
+
+  if [[ -v subsys ]]; then
+    params="${params},subsys=${subsys}"
+  fi
+
+  if [[ -v extra ]]; then
+    params="${params},${extra}"
+  fi
+
+  QEMU_PARAMS+=("-device" "$params")
+}
+
 qemu_nvme_add_ctrl() {
   local long="serial:,port:,subsys:,extra:"
 
@@ -168,4 +284,80 @@ qemu_nvme_add_ns() {
   fi
 
   QEMU_PARAMS+=("-device" "$params")
+}
+
+qemu_nvme_add_ns_object() {
+  local object="x-nvme-ns-nvm"
+
+  local long="nsid:,subsys:,size:,extra:,no-create-drive,zoned"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--nsid' )
+        local nsid="$2"; shift 2
+        ;;
+      '--subsys' )
+        local subsys="$2"; shift 2
+        ;;
+      '--size' )
+        local size="$2"; shift 2
+        ;;
+      '--no-create-drive' )
+        local no_create_drive=1; shift
+        ;;
+      '--zoned' )
+        local zoned=1; shift
+        ;;
+      '--extra' )
+        local extra="$2"; shift 2
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ $# -ne 1 ]]; then
+    _fatal 1 "missing namespace name"
+  fi
+
+  local id="$1"; shift
+
+  if [[ ! -v no_create_drive ]]; then
+    if [[ ! -v size ]]; then
+      _fatal 1 "missing required 'size' argument"
+    fi
+
+    qemu_drive_add "$id" --create --size "$size" --discard
+  fi
+
+  if [[ ! -v subsys ]]; then
+    _fatal 1 "missing required 'subsys' argument"
+  fi
+
+  if [[ -v zoned ]]; then
+    object="x-nvme-ns-zoned"
+  fi
+
+  local params="${object},id=$id,blockdev=$id,subsys=${subsys}"
+
+  if [[ -v nsid ]]; then
+    params="${params},nsid=$nsid"
+  fi
+
+  if [[ -v extra ]]; then
+    params="${params},${extra}"
+  fi
+
+  QEMU_PARAMS+=("-object" "$params")
 }
