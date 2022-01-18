@@ -90,6 +90,8 @@ key. Place the output image (`seed.img`) in `img/` and pass the `--cloud-init`
 cloud-init will automatically power off the virtual machine when it has been
 configured.
 
+NOTE: For the cloud-config helper script to work `cloud-utils` is required.
+
 [cloud-init]: https://cloudinit.readthedocs.io/en/latest/
 
 
