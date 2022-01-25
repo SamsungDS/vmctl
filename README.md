@@ -79,6 +79,10 @@ you can use the included cloud-config helper script to generate a basic
 cloud-init seed image:
 
     $ ./contrib/generate-cloud-config-seed.sh ~/.ssh/id_rsa.pub
+    
+If the image is running freebsd, use the script with `-freebsd` suffix:
+    
+    $ ./contrib/generate-cloud-config-seed-freebsd.sh ~/.ssh/id_rsa.pub
 
 This will generate a simple cloud-init seed image that will set up the image
 with a default `vmuser` account that can be logged into using the given public
