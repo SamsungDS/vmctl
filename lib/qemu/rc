@@ -72,8 +72,9 @@ qemu_drive_add() {
   local intf="none"
   local discard="off"
   local media="disk"
+  local read_only="no"
 
-  local long="file:,format:,interface:,discard,cdrom,create,size:"
+  local long="file:,format:,interface:,discard,cdrom,create,size:,read-only"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -98,6 +99,10 @@ qemu_drive_add() {
 
       '--discard' )
         discard="unmap"; shift
+        ;;
+
+      '--read-only' )
+        read_only="yes"; shift
         ;;
 
       '--cdrom' )
@@ -146,5 +151,5 @@ qemu_drive_add() {
     fi
   fi
 
-  QEMU_PARAMS+=("-drive" "id=${id},file=$file,format=$format,if=$intf,discard=$discard,media=$media")
+  QEMU_PARAMS+=("-drive" "id=${id},file=$file,format=$format,if=$intf,discard=$discard,media=$media,read-only=$read_only")
 }
