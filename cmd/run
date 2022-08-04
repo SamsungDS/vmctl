@@ -183,7 +183,7 @@ _run() {
   QEMU_PARAMS+=("-pidfile" "${path_prefix}/run/${VMNAME}/pidfile")
 
   if [[ -v kernel_dir ]]; then
-    local cmdline="root=/dev/vda1 console=ttyS0,115200"
+    local cmdline="root=/dev/vda1 console=${GUEST_KERNEL_CONSOLE}"
 
     if [[ -v DOCKER_IMAGE ]]; then
       docker_params+=("--mount" "type=bind,src=$(realpath "$kernel_dir"),dst=/kernel")
@@ -191,7 +191,7 @@ _run() {
     fi
 
     # custom kernel
-    QEMU_PARAMS+=("-kernel" "${kernel_dir}/arch/x86_64/boot/bzImage")
+    QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
 
     if [[ -v cloud_init_seed ]]; then
       cmdline="$cmdline ci.datasource=NoCloud"
