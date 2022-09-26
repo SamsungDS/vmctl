@@ -1,10 +1,21 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
 #
 # Written by Klaus Jensen <its@irrelevant.dk>
 
+if [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
+  echo "error: vmctl requires bash version 4 or later" >&2
+  exit 1
+fi
+
 set -euo pipefail
+
+case "$(uname)" in
+  Darwin )
+    PATH="${HOMEBREW_PREFIX}/opt/gnu-getopt/bin:${PATH}"
+    ;;
+esac
 
 # script basename and basedir
 BASENAME="$(basename "${BASH_SOURCE[0]}")"
