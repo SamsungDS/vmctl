@@ -267,6 +267,10 @@ _run() {
     exit 0
   fi
 
+  if command -v _pre > /dev/null; then
+	  _pre
+  fi
+
   if [[ -v do_gdb ]]; then
     gdb -ex "handle SIGUSR1 pass noprint" -ex "handle SIGPIPE nostop" --args "$QEMU_SYSTEM_BINARY" "${params[@]}"
   else
@@ -286,5 +290,9 @@ _run() {
     else
       $QEMU_SYSTEM_BINARY "${params[@]}"
     fi
+  fi
+
+  if command -v _post > /dev/null; then
+	  _post
   fi
 }
