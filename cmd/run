@@ -131,7 +131,7 @@ _run() {
     fi
 
     _log "creating boot image ('$GUEST_BOOT') from base ('$GUEST_BOOT_BASE')"
-    _log_named "qemu-img create" qemu-img create -f qcow2 -b "$(basename "$GUEST_BOOT_BASE")" \
+    _log_named "qemu-img create" "$QEMU_IMG" create -f qcow2 -b "$(basename "$GUEST_BOOT_BASE")" \
       -F qcow2 "${VMIMG}/$(basename "$GUEST_BOOT")"
   fi
 

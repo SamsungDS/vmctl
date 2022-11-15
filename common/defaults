@@ -6,6 +6,7 @@
 
 # default qemu system binary
 : "${QEMU_SYSTEM_BINARY:="qemu-system-x86_64"}"
+: "${QEMU_IMG:="qemu-img"}"
 
 # default additional parameters for kernel cmdline
 : "${GUEST_KERNEL_APPEND_EXTRA:=""}"

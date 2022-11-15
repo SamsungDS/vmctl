@@ -64,7 +64,7 @@ _create_image() {
     args+=("-b" "$backing")
   fi
 
-  _log_named "qemu-img/create" qemu-img create "${args[@]}" "$file" "$size"
+  _log_named "qemu-img/create" "$QEMU_IMG" create "${args[@]}" "$file" "$size"
 }
 
 qemu_drive_add() {
