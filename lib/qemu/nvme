@@ -8,7 +8,7 @@
 source "${BASEDIR}/lib/qemu/rc"
 
 qemu_nvme_add_subsys() {
-  local long="nqn:"
+  local long="nqn:,extra:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -21,6 +21,9 @@ qemu_nvme_add_subsys() {
     case "$1" in
       '--nqn' )
         local nqn="$2"; shift 2
+        ;;
+      '--extra' )
+        local extra="$2"; shift 2;
         ;;
       '--' )
         shift; break
@@ -40,6 +43,10 @@ qemu_nvme_add_subsys() {
   local params="nvme-subsys,id=${id}"
   if [[ -v nqn ]]; then
     params="${params},nqn=${nqn}"
+  fi
+
+  if [[ -v extra ]]; then
+    params="${params},${extra}"
   fi
 
   QEMU_PARAMS+=("-device" "$params")
