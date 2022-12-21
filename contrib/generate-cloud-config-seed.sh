@@ -2,7 +2,12 @@
 
 set -euo pipefail
 
-cat <<EOF >/tmp/cloud-config
+cat <<EOF >/tmp/meta-data
+instance-id: debian-1
+local-hostname: debian
+EOF
+
+cat <<EOF >/tmp/user-data
 #cloud-config
 disable_root: false
 ssh_pwauth: true
@@ -18,7 +23,7 @@ EOF
 
 if [[ $# -gt 0 ]]; then
   pubkey="$(<"$1")"
-  cat <<EOF >>/tmp/cloud-config
+  cat <<EOF >>/tmp/user-data
     ssh_authorized_keys:
       - ${pubkey}
   - name: root
@@ -27,7 +32,7 @@ if [[ $# -gt 0 ]]; then
 EOF
 fi
 
-cat <<EOF >>/tmp/cloud-config
+cat <<EOF >>/tmp/user-data
 
 write_files:
 - path: /etc/systemd/system/mount-shared-kernel-dir.service
@@ -90,12 +95,14 @@ runcmd:
   - [ systemctl, enable, mount-shared-kernel-dir.service ]
 EOF
 
-cat <<EOF >>/tmp/cloud-config
+cat <<EOF >>/tmp/user-data
 
 power_state:
   mode: poweroff
   condition: True
 EOF
 
-cloud-localds -v seed.img /tmp/cloud-config
-rm /tmp/cloud-config
+#cloud-localds -v seed.img /tmp/cloud-config
+mkisofs -output seed.img -volid cidata -joliet -rock /tmp/user-data /tmp/meta-data
+rm /tmp/user-data
+rm /tmp/meta-data
