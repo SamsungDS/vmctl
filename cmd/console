@@ -43,10 +43,10 @@ _console() {
   fi
 
   local args=(
-    "-,raw,echo=0,escape=0x0f"
+    "-,rawer,echo=0,escape=0x1f"
     "unix-connect:${VMRUN}/console"
   )
 
-  _log "use Ctrl-O to detach from console"
+  _log "use ^- to detach from console"
   socat "${args[@]}"
 }

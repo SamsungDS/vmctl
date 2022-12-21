@@ -48,14 +48,14 @@ _monitor() {
   fi
 
   local args=(
-    "-,raw,echo=0,escape=0x0f"
+    "-,rawer,echo=0,escape=0x1f"
     "unix-connect:${VMRUN}/monitor"
   )
 
   if [[ $# -gt 0 ]]; then
     echo "$@" | socat "${args[@]}"
   else
-    _log "use Ctrl-O to detach from monitor"
+    _log "use ^- to detach from monitor"
     if ! socat "${args[@]}"; then
       _fatal 1 "could not attach to monitor"
     fi
