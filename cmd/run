@@ -27,6 +27,7 @@ Options:
   -c, --cloud-init          use '\${VMIMG}/seed.img' as a cloud-init seed
   -b, --background          start in the background
   -g, --gdb                 launch under gdb
+  -p, --perf                perf record
   -f, --reset               recreate images associated with devices
   -n, --print               print invocation command instead of executing it
   -t, --trace EVENT,...     enable/disable trace event (seperated by commas).
@@ -35,8 +36,8 @@ Options:
                             event with a '-'"
 
 _run() {
-  local short="k:cd:bnfgt:h"
-  local long="kernel-dir:,cloud-init,background,print,reset,gdb,trace:,help"
+  local short="k:cd:bnfgpt:h"
+  local long="kernel-dir:,cloud-init,background,print,reset,gdb,perf,trace:,help"
 
   if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
     exit 1
@@ -73,6 +74,10 @@ _run() {
 
       '-g' | '--gdb' )
         local do_gdb=1; shift
+        ;;
+
+      '-p' | '--perf' )
+        local do_perf=1; shift
         ;;
 
       '-t' | '--trace' )
@@ -150,7 +155,7 @@ _run() {
   QEMU_PARAMS+=("-pidfile" "${VMROOT}/run/${VMNAME}/pidfile")
 
   if [[ -v kernel_dir ]]; then
-    local cmdline="root=/dev/vda1 console=${GUEST_KERNEL_CONSOLE}"
+    local cmdline="root=/dev/vdb1 console=${GUEST_KERNEL_CONSOLE}"
 
     # custom kernel
     QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
@@ -227,6 +232,8 @@ _run() {
   if [[ -v do_gdb ]]; then
     gdb -ex "handle SIGUSR1 pass noprint" -ex "handle SIGPIPE nostop" --args "$QEMU_SYSTEM_BINARY" "${params[@]}"
     #lldb -- "$QEMU_SYSTEM_BINARY" "${params[@]}"
+  elif [[ -v do_perf ]]; then
+    perf record "$QEMU_SYSTEM_BINARY" "${params[@]}"
   else
     if [[ -v do_background ]]; then
       _log "launching in background"
