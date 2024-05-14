@@ -41,6 +41,7 @@ _vars() {
   echo "VMSTATE=$(realpath "${VMSTATE}")"
   echo "VMLOG=$(realpath "${VMLOG}")"
   echo "VMRUN=$(realpath "${VMRUN}")"
+  echo "VMSSH=${GUEST_SSH_PORT}"
 
   if [[ -S "${VMRUN}/monitor" ]]; then
     echo "VMMONITOR=$(realpath "${VMRUN}/monitor")"
