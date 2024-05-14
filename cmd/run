@@ -155,7 +155,7 @@ _run() {
   QEMU_PARAMS+=("-pidfile" "${VMROOT}/run/${VMNAME}/pidfile")
 
   if [[ -v kernel_dir ]]; then
-    local cmdline="root=/dev/vdb1 console=${GUEST_KERNEL_CONSOLE}"
+    local cmdline="root=${GUEST_KERNEL_BOOTDEV} console=${GUEST_KERNEL_CONSOLE}"
 
     # custom kernel
     QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
