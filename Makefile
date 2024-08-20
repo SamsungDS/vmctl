@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 SHELLCHECK := $(shell command -v shellcheck 2>/dev/null)
 
 check:
