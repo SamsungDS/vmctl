@@ -8,7 +8,7 @@ QEMU NVMe Testing Galore!
 running.
 
 
-## Getting Started
+## Getting Started (Manual Mode)
 
 1. Clone the `vmctl` repository.
 
@@ -56,6 +56,17 @@ running.
 
 [archbase]: https://github.com/OpenMPDK/archbase
 [ubuntu-cloud-image]: https://cloud-images.ubuntu.com
+
+## Getting Started (Helper Mode)
+
+1. Clone the `vmctl` repository.
+
+2. Run `source vmctl-init-conf <confdir>`.
+
+   **Note** A `<confdir>` will be created with all the examples and `vmctl`
+   command ready. Edit the examples as you need.
+
+3. Example: Run `vmctl --config <config> run`.
 
 
 ## Virtual Machine Configurations
