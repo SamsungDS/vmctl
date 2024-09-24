@@ -29,10 +29,6 @@ _ssh() {
   eval set -- "$tmp"
   unset tmp
 
-  local port="$GUEST_SSH_PORT"
-  local user="$GUEST_SSH_USER"
-  local cmd=""
-
   while true; do
     case "$1" in
       '-w' | '--wait' )
@@ -60,6 +56,10 @@ _ssh() {
   done
 
   _load_vm
+
+  : "${port:="${GUEST_SSH_PORT}"}"
+  : "${user:="${GUEST_SSH_USER}"}"
+  : "${cmd:=""}"
 
   if ! _is_running; then
     _fatal 1 "$VMNAME does not appear to be running"
