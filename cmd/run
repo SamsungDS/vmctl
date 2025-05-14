@@ -226,7 +226,7 @@ _run() {
   fi
 
   if command -v _pre > /dev/null; then
-	  _pre
+    _pre
   fi
 
   if [[ -v VMPRE ]]; then
@@ -252,6 +252,6 @@ _run() {
   fi
 
   if command -v _post > /dev/null; then
-	  _post
+    _post
   fi
 }
