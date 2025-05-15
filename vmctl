@@ -27,19 +27,17 @@ source "${BASEDIR}/common/rc"
 #shellcheck source=common/defaults
 source "${BASEDIR}/common/defaults"
 
-USAGE="usage: ${BASENAME} -c CONFIG COMMAND [OPTION...]
+USAGE="usage: ${BASENAME} [OPTIONS] COMMAND [CMD_ARGS]
 
-QEMU Testing Galore!
+Run a vmctl command
 
-See \`vmctl -c CONFIG <command> --help\` for usage on individual commands.
-
-Options:
+OPTIONS:
   -c, --config    virtual machine configuration to use; required for most
                   commands
   -b, --basedir   set the base machine directory; defaults to \$VMCTL_VMROOT
                   (or the current directory if unset)
 
-Commands:
+COMMAND:
   run             launch a vm configuration
   ssh             ssh into a running VM
   log             show logs from a VM
@@ -47,9 +45,11 @@ Commands:
   monitor         attach to the QEMU monitor of a running VM
   poweroff        gracefully shutdown a running VM (if supported)
   kill            kill a VM (monitor quit)
-  vars            return output suitable for \`eval\`, specifying various
-                  variables about the setup
-  env             manage vmctl environments"
+  vars            return setup vars; output suitable for \`eval\`
+  env             manage vmctl environments
+
+CMD_ARGS:
+  \`vmctl <command> --help\` for list of <command> arguments"
 
 _main() {
   local short="b:c:h"
