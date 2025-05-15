@@ -12,40 +12,37 @@ running.
 
 1. Clone the `vmctl` repository.
 
-2. Make sure that that `ssh` and `socat` are available. Follow the standard
-   procedure for your distribution to install those packages.
+2. Bootstrap a config directory with the following command:
 
-3. For ease of use, do a symlink in your path, say
+       $ ./vmctl env --confdir $HOME/vms --verbose --bootstrap
 
-       $ ln -s /path/to/vmctl/vmctl $HOME/bin/vmctl
+   **Note** This will:
+    * Ensure that you have `ssh` and `socat` installed
+    * Create a configuration directory in $HOME/vms
+    * Ensure you have a base `*-q35-base.conf`
+    * Ensure you have `common.conf` (to share common vars like
+      `QEMU_SYSTEM_BINARY`)
 
-4. Create a directory to hold your VMs and their configurations
+3. There are two ways of executing `vmctl`:
+    1. Symlink in your path to always have it available "natively"
 
-       $ mkdir $HOME/vms; cd $HOME/vms
+        $ ln -s /path/to/vmctl/vmctl $HOME/bin/vmctl
+        $ vmctl --help
+        $ vmctl -c CONFIG <command>
 
-5. You probably want to use the `q35-base.conf` configuration file to base your
-   own VMs on, so copy it.
+    2. Activate `vmctl` with `env` for your current shell
 
-       $ cp /path/to/vmctl/examples/vm/q35-base.conf .
+        $ ./vmctl env --confdir $HOME/vms
+        $ vmctl --help
+        $ vmctl -c CONFIG <command>
 
-6. When you have a lot of configuration there is probably something you'd want
-   to share between them. Examples are `QEMU_SYSTEM_BINARY` and
-   `GUEST_KERNEL_APPEND_EXTRA`. The examples (including the default
-   `q35-base.conf`) assumes the presence of such a `common.conf` file:
-
-       $ cp /path/to/vmctl/examples/vm/common.conf .
-
-7. Start from an example and edit it as you see fit.
-
-       $ cp /path/to/vmctl/examples/vm/nvme.conf .
-
-8. Prepare a boot image. The `q35-base.conf` configuration will look a base
+4. Prepare a boot image. The `<arch>-<machine>-base.conf` configuration will look for a base
    image in `img/base.qcow2`. You can use [archbase][archbase] to build a lean
    Arch Linux base image or grab a QCOW2-based [Ubuntu cloud image][ubuntu-cloud-image]
    if that's your vice.
 
    In the case of a standard "cloud image", you probably want to resize it
-   since it is usually shrinked to be as small as possible by default.
+   since it is usually shrunk to be as small as possible by default.
 
        $ qemu-img resize img/base.qcow2 8G
 
@@ -54,20 +51,12 @@ running.
    will be a differential image backed by `img/base.qcow2`. So, if you ever
    need to reset to the "base" state, just remove the `img/nvme.qcow2` image.
 
+5. Start from an example and edit it as you see fit.
+
+       $ edit $HOME/vms/nvme.conf
+
 [archbase]: https://github.com/OpenMPDK/archbase
 [ubuntu-cloud-image]: https://cloud-images.ubuntu.com
-
-## Getting Started (Helper Mode)
-
-1. Clone the `vmctl` repository.
-
-2. Run `source vmctl-init-conf <confdir>`.
-
-   **Note** A `<confdir>` will be created with all the examples and `vmctl`
-   command ready. Edit the examples as you need.
-
-3. Example: Run `vmctl --config <config> run`.
-
 
 ## Virtual Machine Configurations
 

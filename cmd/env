@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-late
+# Copyright (c) 2025 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Joel Granados <joel.granados@kernel.org>
+
+USAGE="usage: ${BASENAME} env ARGS [OPTION...]
+
+Use vmctl command without installing it. The 'env' command will ensure vmctl
+is in \$PATH and change directory to <confdir>
+
+ARGS:
+  -c, --confdir     the path to the configuration dir
+
+OPTION:
+  -h, --help        display this help message and exit
+  -v, --verbose     detailed output
+  -b, --bootstrap   create <confdir> and copy examples
+                    will not enter vmctl environment"
+
+_env() {
+  local short="c:,b,h,v"
+  local long="confdir:,bootstrap,help,verbose"
+
+  if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  local verbose=""
+  while true; do
+    case "$1" in
+      '-c' | '--confdir' )
+        local confdir="$2"; shift 2
+        ;;
+      '-b' | '--bootstrap' )
+        local bootstrap=1; shift
+        ;;
+      '-h' | '--help' )
+        _usage "$USAGE" 0
+        ;;
+      '-v' | '--verbose' )
+        verbose="--verbose"; shift
+        ;;
+      '--' )
+        shift; break
+        ;;
+      '*' )
+        _usage "$USAGE" 1
+        ;;
+    esac
+  done
+
+  if [[ ! -v confdir ]]; then
+    _usage "$USAGE" 1
+  fi
+
+  if [[ ! -d "${confdir}" && ! -v bootstrap ]]; then
+    _fatal 1 "${FUNCNAME[0]}: ${confdir} does not exist.
+      run '${BASENAME} env -c ${confdir} --bootstrap' to fix the error"
+  fi
+
+  # Init config if bootstrapping
+  if [[ -v bootstrap ]]; then
+    _require_program ssh
+    _require_program socat
+    exampledir="${BASEDIR}/examples/vm"
+    if [[ ! -d ${exampledir} ]]; then
+      _fatal 1 "Example dir (${exampledir}) not found."
+    fi
+
+    if [ ! -d "${confdir}" ]; then
+      if ! mkdir --parent ${verbose} "${confdir}"; then
+        _fatal 1 "${FUNCNAME[0]}: mkdir ${confdir} failed"
+      fi
+    fi
+
+    if ! cp --recursive ${verbose} --update=none "${exampledir}"/* "${confdir}" ; then
+      _fatal 1 "${FUNCNAME[0]}: Could not copy from ${exampledir} to ${confdir}"
+    fi
+
+    return 0
+  fi
+
+  # vmctl in path
+  if ! command -v vmctl &> /dev/null; then
+    export PATH="${BASEDIR}:$PATH"
+    _require_program vmctl
+  fi
+
+  cd "${confdir}" > /dev/null || _fatal 1 "${FUNCNAME[0]}: Could not change dir to ${confdir}"
+  exec "${SHELL:-/bin/bash}"
+}

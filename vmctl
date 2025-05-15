@@ -48,7 +48,8 @@ Commands:
   poweroff        gracefully shutdown a running VM (if supported)
   kill            kill a VM (monitor quit)
   vars            return output suitable for \`eval\`, specifying various
-                  variables about the setup"
+                  variables about the setup
+  env             manage vmctl environments"
 
 _main() {
   local short="b:c:h"
