@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Joel Granados <joel.granados@kernel.org>
+
+_qemu_nix_create_nix_sys () {
+  local flake_path="$1"
+  local dst_path="$2"
+  local flake_attr_path="nixosConfigurations.vm.config.system.build.toplevel"
+  local flake_dst_dir="${VMSTATE}"
+  local flake_dst_path="${flake_dst_dir}/flake.nix"
+
+  if ! cp -f "${flake_path}" "${flake_dst_path}"; then
+    _fatal 1 "${FUNCNAME[0]}: Error copying \
+      src:(${flake_path}) dest:(${flake_dst_path})"
+  fi
+
+  local nix_build_cmd="nix build \
+    'path:${flake_dst_dir}#${flake_attr_path}' \
+    -o \"${dst_path}\" \
+    --no-write-lock-file"
+  if ! eval "${nix_build_cmd}"; then
+    _fatal 1 "${FUNCNAME[0]}: Error running '${nix_build_cmd}'"
+  fi
+}
+
+_qemu_nix_create_nix_init () {
+  local state_dir="$1"
+  local init_path="${state_dir}/init"
+  if [[ -f ${init_path} && -v NIX_INIT_REBUILD && ${NIX_INIT_REBUILD} != "yes" ]]; then
+    return
+  fi
+
+  _require_program make
+  _require_program "$(command -v musl-clang 2> /dev/null || echo gcc)"
+
+  local make_path="${state_dir}/Makefile"
+  if [[ ! -f ${make_path} ]]; then
+    if ! ln -s "${BASEDIR}/contrib/nix/Makefile" "${make_path}"; then
+      _fatal 1 "${FUNCNAME[0]}: Error creating sym link for ${make_path}"
+    fi
+  fi
+
+  local c_init_path="${state_dir}/vmctl_init.c"
+  if [[ ! -f ${c_init_path} ]]; then
+    if ! ln -s "${BASEDIR}/contrib/nix/vmctl_init.c" "${c_init_path}"; then
+      _fatal 1 "${FUNCNAME[0]}: Error creating sym link for ${c_init_path}"
+    fi
+  fi
+
+  if [[ ${NIX_INIT_REBUILD} == "yes" ]]; then
+    if ! make -C "${state_dir}" clean; then
+      _fatal 1 "${FUNCNAME[0]}: Error cleaning ${c_init_path}"
+    fi
+  fi
+  if ! make -C "${state_dir}" all; then
+    _fatal 1 "${FUNCNAME[0]}: Error compiling ${c_init_path}"
+  fi
+}
+
+qemu_nix_add_noimgnix () {
+  _require_program nix
+  _require_path "${NIX_STORE_PATH}"
+
+  local long="flake-path:,cmd-line-extra:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  local cmd_line_extra=""
+  while true; do
+    case "$1" in
+      '--flake-path' )
+        local flake_path="$2"; shift 2
+        ;;
+      '--cmd-line-extra' )
+        cmd_line_extra="$2"; shift 2
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ ! -v VMSTATE ]]; then
+    _fatal 1 "${FUNCNAME[0]}: VMSTATE global var is not set"
+  fi
+
+  if [[ ! -v flake_path ]]; then
+    local flake_path="${BASEDIR}/contrib/nix/x86_64-noimgnix-base.nix"
+  fi
+
+  if [[ ! -f ${flake_path} ]]; then
+    _fatal 1 "${FUNCNAME[0]}: File not found (${flake_path})"
+  fi
+
+  local dst_path="${VMSTATE}/nixsys"
+  if [[ -v NIX_SYS_BUILD_FORCE || ! -h ${dst_path} ]]; then
+    _qemu_nix_create_nix_sys "${flake_path}" "${dst_path}"
+  fi
+
+  _qemu_nix_create_nix_init "${VMSTATE}"
+
+  local nix_init_path=""
+  nix_init_path="$(readlink "${dst_path}")/init"
+  local cmd_line="root=/dev/ram0 console=${GUEST_KERNEL_CONSOLE}"
+  if [[ -v GUEST_KERNEL_APPEND_EXTRA ]]; then
+    cmd_line="${cmd_line} ${GUEST_KERNEL_APPEND_EXTRA}"
+  fi
+  cmd_line="${cmd_line} ${cmd_line_extra} -- --init-path ${nix_init_path}"
+
+  QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
+  QEMU_PARAMS+=("-append" "${cmd_line}")
+  QEMU_PARAMS+=("-initrd" "${VMSTATE}/init.img")
+
+  qemu_share_add --shared-dir "${NIX_STORE_PATH}" \
+      --tag "nixstore" \
+      --share-type "viofs"
+}

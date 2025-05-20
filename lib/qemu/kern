@@ -4,11 +4,6 @@
 #
 # Written by Joel Granados <joel.granados@kernel.org>
 
-
-_qemu_kern_noimg_add() {
-  _fatal 1 "${FUNCNAME[0]} is not supported yet"
-}
-
 _qemu_kern_img_add() {
   local cmdline_extra="$1"
 
@@ -84,7 +79,7 @@ qemu_kern_add_custom() {
   done
 
   if [[ -v NIX_STORE_PATH ]]; then
-    _qemu_kern_noimg_add
+    qemu_nix_add_noimgnix
   else
     _qemu_kern_img_add "${cmdline_extra}"
   fi
