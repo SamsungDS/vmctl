@@ -129,6 +129,14 @@ _require_program() {
   fi
 }
 
+_require_path() {
+  local rpath="$1"; shift
+
+  if [[ ! -d "${rpath}" ]]; then
+    _fatal 1 "Path not found (${rpath}). $*"
+  fi
+}
+
 _is_running() {
   if [[ -f "${VMRUN}/pidfile" ]]; then
     return 0

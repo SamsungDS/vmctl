@@ -37,27 +37,20 @@ running.
         $ vmctl -c CONFIG <command>
         ```
 
-4. Prepare a boot image. The base configruation `*-base.conf` will look for a
-   base image in `img/base.qcow2`. You can use [archbase][archbase] to build a
-   lean Arch Linux base image or grab a QCOW2-based [Ubuntu cloud
-   image][ubuntu-cloud-image] if that's your vice.
+4. Pre-run prep:
+    `vmctl` supports two methods:
+    * Imageless: Requires nix infrastructure and is based on creating the
+      system through the `nix build` command. Goto [Prep nix](#Prep-nix) before
+      running.
+    * Image-Backed: This is the "usual" way of running QEMU where the OS is in
+      images (qcow) on your filesystem. Goto [Prep boot img](#Prep-boot-img)
+      before running.
 
-   In the case of a standard "cloud image", you probably want to resize it
-   since it is usually shrunk to be as small as possible by default.
-
-       $ qemu-img resize img/base.qcow2 8G
-
-   **Note** The example `nvme.conf` will define `GUEST_BOOT="img/nvme.qcow2"`.
-   You do not need to provide that image - if it is not there `$GUEST_BOOT`
-   will be a differential image backed by `img/base.qcow2`. So, if you ever
-   need to reset to the "base" state, just remove the `img/nvme.qcow2` image.
 
 5. Start from an example and edit it as you see fit.
 
        $ edit $HOME/vms/nvme.conf
 
-[archbase]: https://github.com/OpenMPDK/archbase
-[ubuntu-cloud-image]: https://cloud-images.ubuntu.com
 
 ## Virtual Machine Configurations
 
@@ -74,35 +67,6 @@ the `CONFIG` config file in interactive mode such that the VM serial output is
 sent to standard out. The QEMU monitor is multiplexed to standard out, so you
 can access it by issuing `Ctrl-a c`.
 
-### cloud-init
-
-If your chosen base image is meant to be configured through [cloud-init][cloud-init],
-you can use the included cloud-config helper script to generate a basic
-cloud-init seed image:
-
-    $ ./contrib/generate-cloud-config-seed.sh ~/.ssh/id_rsa.pub
-    
-If the image is running freebsd, use the script with `-freebsd` suffix:
-    
-    $ ./contrib/generate-cloud-config-seed-freebsd.sh ~/.ssh/id_rsa.pub
-
-This will generate a simple cloud-init seed image that will set up the image
-with a default `vmuser` account that can be logged into using the given public
-key. Place the output image (`seed.img`) in `img/` and pass the `--cloud-init`
-(short: `'-c'`) option to `vmctl run` to initialize the image on first boot:
-
-    $ vmctl -c CONFIG run -c
-
-cloud-init will automatically power off the virtual machine when it has been
-configured.
-
-NOTE: For the cloud-config helper script to work `cloud-utils` is required.
-
-[cloud-init]: https://cloudinit.readthedocs.io/en/latest/
-
-
-### SSH, Serial console and QEMU monitor
-
 By default, `vmctl` will launch the guest such that the serial console and the
 QEMU monitor is multiplexed to standard out. This means that you will see the
 serial console output directly on the screen.
@@ -117,6 +81,7 @@ the console and monitor using
     $ vmctl -c CONFIG console
     $ vmctl -c CONFIG monitor
 
+
 ### Tracing
 
 The `--trace` (short: `-t`) option can be used to enable tracing inside QEMU.
@@ -130,6 +95,7 @@ to IRQs, use
 `vmctl` inserts an implicit `*`-suffix such that all traces with the given
 prefix is traced.
 
+
 ### Custom kernel
 
 Finally, the `--kernel-dir` (short: `-k`) can be used to point to a custom
@@ -141,6 +107,73 @@ image built by `archbase` has support for this built-in and the
 that configures the image to support this. In non-cloud-init settings, see
 `contrib/systemd` for a systemd service that should be usable on most
 distributions.
+
+## Prep nix
+
+Imageless mode depends on nix commands and flake infrastrcture. If you are on
+nixos, add the following text to your configuration file (usually located at
+/etc/nixos/configuration.nix):
+
+    ```
+    nix = {
+        package = pkgs.nix;
+        extraOptions = ''
+          experimental-features = nix-command flakes
+        '';
+    };
+    ```
+
+On the other hand, if you have installed nix on another distribution (like Debian),
+add the following text to your configruation file (usually /etc/nix/nix.conf):
+
+    experimental-features = nix-command flakes
+
+
+## Prep boot img
+
+The base configruation `*-base.conf` will look for a base image in
+`img/base.qcow2`. You can use [archbase][archbase] to build a lean Arch Linux
+base image or grab a QCOW2-based [Ubuntu cloud image][ubuntu-cloud-image] if
+that's your vice.
+
+In the case of a standard "cloud image", you probably want to resize it since
+it is usually shrunk to be as small as possible by default.
+
+    $ qemu-img resize img/base.qcow2 8G
+
+**Note** The example `nvme.conf` will define `GUEST_BOOT="img/nvme.qcow2"`.
+You do not need to provide that image - if it is not there `$GUEST_BOOT`
+will be a differential image backed by `img/base.qcow2`. So, if you ever
+need to reset to the "base" state, just remove the `img/nvme.qcow2` image.
+
+[archbase]: https://github.com/OpenMPDK/archbase
+[ubuntu-cloud-image]: https://cloud-images.ubuntu.com
+
+### cloud-init
+
+If your chosen base image is meant to be configured through [cloud-init][cloud-init],
+you can use the included cloud-config helper script to generate a basic
+cloud-init seed image:
+
+    $ ./contrib/generate-cloud-config-seed.sh ~/.ssh/id_rsa.pub
+
+If the image is running freebsd, use the script with `-freebsd` suffix:
+
+    $ ./contrib/generate-cloud-config-seed-freebsd.sh ~/.ssh/id_rsa.pub
+
+This will generate a simple cloud-init seed image that will set up the image
+with a default `vmuser` account that can be logged into using the given public
+key. Place the output image (`seed.img`) in `img/` and pass the `--cloud-init`
+(short: `'-c'`) option to `vmctl run` to initialize the image on first boot:
+
+    $ vmctl -c CONFIG run -c
+
+cloud-init will automatically power off the virtual machine when it has been
+configured.
+
+**Note**: For the cloud-config helper script to work `cloud-utils` is required.
+
+[cloud-init]: https://cloudinit.readthedocs.io/en/latest/
 
 
 ## License
