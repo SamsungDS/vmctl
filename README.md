@@ -19,7 +19,7 @@ running.
    **Note** This will:
     * Ensure that you have `ssh` and `socat` installed
     * Create a configuration directory in $HOME/vms
-    * Ensure you have a base `*-q35-base.conf`
+    * Ensure you have a base `*-base.conf`
     * Ensure you have `common.conf` (to share common vars like
       `QEMU_SYSTEM_BINARY`)
 
@@ -36,10 +36,10 @@ running.
         $ vmctl --help
         $ vmctl -c CONFIG <command>
 
-4. Prepare a boot image. The `<arch>-<machine>-base.conf` configuration will look for a base
-   image in `img/base.qcow2`. You can use [archbase][archbase] to build a lean
-   Arch Linux base image or grab a QCOW2-based [Ubuntu cloud image][ubuntu-cloud-image]
-   if that's your vice.
+4. Prepare a boot image. The base configruation `*-base.conf` will look for a
+   base image in `img/base.qcow2`. You can use [archbase][archbase] to build a
+   lean Arch Linux base image or grab a QCOW2-based [Ubuntu cloud
+   image][ubuntu-cloud-image] if that's your vice.
 
    In the case of a standard "cloud image", you probably want to resize it
    since it is usually shrunk to be as small as possible by default.
@@ -61,8 +61,9 @@ running.
 ## Virtual Machine Configurations
 
 In essence, a virtual machine configuration must provide the `QEMU_PARAMS`
-array and do any required initialization of VM images. Typically,
-`q35-base.conf` in combination with the `qemu_` helpers will "just work".
+array and do any required initialization of VM images. Typically, a base
+configuration `*-base.conf` in combination with the `qemu_` helpers will "just
+work".
 
 
 ## Running Virtual Machines
