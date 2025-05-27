@@ -102,16 +102,6 @@ _run() {
 
   _load_vm
 
-  if [[ ! -f "${VMROOT}/$GUEST_BOOT" && ! -v do_print ]]; then
-    if [[ ! -f "${VMROOT}/$GUEST_BOOT_BASE" ]]; then
-      _fatal 1 "base image '${VMROOT}/${GUEST_BOOT_BASE}' does not exist"
-    fi
-
-    _log "creating boot image ('$GUEST_BOOT') from base ('$GUEST_BOOT_BASE')"
-    _log_named "qemu-img create" "$QEMU_IMG" create -f qcow2 -b "$(basename "$GUEST_BOOT_BASE")" \
-      -F qcow2 "${VMIMG}/$(basename "$GUEST_BOOT")" "$GUEST_BOOT_SIZE"
-  fi
-
   if [[ -v do_gdb && -v do_background ]]; then
     _fatal 1 "--gdb cannot be used with --background"
   fi

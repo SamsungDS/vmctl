@@ -11,6 +11,23 @@ _qemu_kern_noimg_add() {
 
 _qemu_kern_img_add() {
   local cmdline_extra="$1"
+
+  for var in GUEST_BOOT GUEST_BOOT_BASE; do
+    if [[ ! -v ${var} ]]; then
+      _fatal 1 "${FUNCNAME[0]} Missing var ${var}. Add it to ${VMCONFIG}"
+    fi
+  done
+
+  if [[ ! -f "${VMROOT}/$GUEST_BOOT" ]]; then
+    if [[ ! -f "${VMROOT}/$GUEST_BOOT_BASE" ]]; then
+      _fatal 1 "base image '${VMROOT}/${GUEST_BOOT_BASE}' does not exist"
+    fi
+
+    _log "creating boot image ('$GUEST_BOOT') from base ('$GUEST_BOOT_BASE')"
+    _log_named "qemu-img create" "$QEMU_IMG" create -f qcow2 -b "$(basename "$GUEST_BOOT_BASE")" \
+      -F qcow2 "${VMIMG}/$(basename "$GUEST_BOOT")" "$GUEST_BOOT_SIZE"
+  fi
+
   if [[ ! -v GUEST_KERNEL_BOOTDEV ]]; then
     GUEST_KERNEL_BOOTDEV="/dev/vda1"
   fi
