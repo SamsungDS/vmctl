@@ -4,7 +4,7 @@
 #
 # Written by Joel Granados <joel.granados@kernel.org>
 
-_qemu_virtiofs_force_memshare() {
+_qemu_share_force_memshare() {
   # memshare for virtiofs https://virtio-fs.gitlab.io/howto-qemu.html
   if [[ ! -v GUEST_MEMORY ]]; then
     _fatal 1 "${FUNCNAME[0]}: GUEST_MEMORY variable is undefined"
@@ -16,10 +16,34 @@ _qemu_virtiofs_force_memshare() {
   fi
 }
 
-qemu_virtiofsd_add_shared() {
+qemu_share_add_virtiofsd() {
   _require_program virtiofsd
+  local share_dir="$1"
+  local tag="$2"
+  local socket_path="${VMRUN}/${tag}.sock"
+  local devid="char${tag}"
+  local chardev_params="socket,id=${devid},path=${socket_path}"
+  local device_params="vhost-user-fs-pci,chardev=${devid},tag=${tag}"
+  cmd="virtiofsd --shared-dir \"${shared_dir}\" --tag \"${tag}\" \
+    --socket-path \"${socket_path}\" --log-level off &"
+  _add_pre_cmd "${cmd}"
 
-  local long="shared-dir:,tag:"
+  _qemu_share_force_memshare
+
+  QEMU_PARAMS+=("-chardev" "${chardev_params}")
+  QEMU_PARAMS+=("-device" "${device_params}")
+}
+
+qemu_share_add_9p() {
+  local share_dir="$1"
+  local tag="$2"
+
+  QEMU_PARAMS+=("-virtfs" \
+    "local,path=${share_dir},security_model=none,readonly=on,mount_tag=${tag}")
+}
+
+qemu_share_add() {
+  local long="shared-dir:,tag:,share-type:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -30,6 +54,9 @@ qemu_virtiofsd_add_shared() {
 
   while true; do
     case "$1" in
+      '--share-type' )
+        local share_type="$2"; shift 2
+        ;;
       '--shared-dir' )
         local shared_dir="$2"; shift 2
         ;;
@@ -57,17 +84,16 @@ qemu_virtiofsd_add_shared() {
     _fatal 1 "${FUNCNAME[0]}: missing required '--tag' argument"
   fi
 
-  local socket_path="${VMRUN}/${tag}.sock"
-  local devid="char${tag}"
-  local chardev_params="socket,id=${devid},path=${socket_path}"
-  local device_params="vhost-user-fs-pci,chardev=${devid},tag=${tag}"
-  cmd="virtiofsd --shared-dir \"${shared_dir}\" --tag \"${tag}\" \
-    --socket-path \"${socket_path}\" --log-level off &"
-  _add_pre_cmd "${cmd}"
+  if [[ ! -v share_type ]]; then
+    local share_type="9p"
+  fi
 
-  _qemu_virtiofs_force_memshare
-
-  QEMU_PARAMS+=("-chardev" "${chardev_params}")
-  QEMU_PARAMS+=("-device" "${device_params}")
+  if [[ "${share_type}" == "9p" ]]; then
+    qemu_share_add_9p "${shared_dir}" "${tag}"
+  elif [[ "${share_type}" == "viofs" ]]; then
+    qemu_share_add_virtiofsd "${shared_dir}" "${tag}"
+  else
+    _fatal 1 "${FUNCNAME[0]}: Unknown directory share type (${share_type})"
+  fi
 }
 
