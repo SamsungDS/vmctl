@@ -4,6 +4,26 @@
 #
 # Written by Joel Granados <joel.granados@kernel.org>
 
+
+_qemu_kern_noimg_add() {
+  _fatal 1 "${FUNCNAME[0]} is not supported yet"
+}
+
+_qemu_kern_img_add() {
+  local cmdline_extra="$1"
+  if [[ ! -v GUEST_KERNEL_BOOTDEV ]]; then
+    GUEST_KERNEL_BOOTDEV="/dev/vda1"
+  fi
+
+  local cmdline="root=${GUEST_KERNEL_BOOTDEV} console=${GUEST_KERNEL_CONSOLE} ${cmdline_extra}"
+  if [[ -v GUEST_KERNEL_APPEND_EXTRA ]]; then
+    cmdline="$cmdline ${GUEST_KERNEL_APPEND_EXTRA}"
+  fi
+
+  QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
+  QEMU_PARAMS+=("-append" "$cmdline")
+}
+
 qemu_kern_add_custom() {
   local cmdline_extra=""
   local mod_share="9p"
@@ -46,17 +66,11 @@ qemu_kern_add_custom() {
     fi
   done
 
-  if [[ ! -v GUEST_KERNEL_BOOTDEV ]]; then
-    GUEST_KERNEL_BOOTDEV="/dev/vda1"
+  if [[ -v NIX_STORE_PATH ]]; then
+    _qemu_kern_noimg_add
+  else
+    _qemu_kern_img_add "${cmdline_extra}"
   fi
-
-  local cmdline="root=${GUEST_KERNEL_BOOTDEV} console=${GUEST_KERNEL_CONSOLE} ${cmdline_extra}"
-  if [[ -n "$GUEST_KERNEL_APPEND_EXTRA" ]]; then
-    cmdline="$cmdline $GUEST_KERNEL_APPEND_EXTRA"
-  fi
-
-  QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
-  QEMU_PARAMS+=("-append" "$cmdline")
 
   local kernel_tag="kernel_dir"
   if [[ ${mod_share} == "9p" ]]; then
