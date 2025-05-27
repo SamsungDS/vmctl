@@ -196,6 +196,15 @@ _run() {
   params=("${QEMU_PARAMS[@]}")
 
   if [[ -v do_print ]]; then
+    if [[ -v VMPRE ]]; then
+      echo "Before QEMU:"
+      for cmd in "${VMPRE[@]}"; do
+        echo -n "  $cmd"
+        echo
+      done
+    fi
+    echo
+
     local nargs="${#params[@]}"
 
     echo "$QEMU_SYSTEM_BINARY \\"
