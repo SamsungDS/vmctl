@@ -8,7 +8,7 @@ QEMU NVMe Testing Galore!
 running.
 
 
-## Getting Started (Manual Mode)
+## Getting Started
 
 1. Clone the `vmctl` repository.
 
