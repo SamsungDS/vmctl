@@ -14,7 +14,7 @@ running.
 
 2. Bootstrap a config directory with the following command:
 
-       $ ./vmctl env --bootstrap $HOME/vms --verbose
+        $ ./vmctl env --bootstrap $HOME/vms --verbose
 
    **Note** This will:
     * Check that `ssh` and `socat` are installed
@@ -25,16 +25,17 @@ running.
 
 3. There are two ways of executing `vmctl`:
     1. Symlink in your path to always have it available "natively"
-
+        ```
         $ ln -s /path/to/vmctl/vmctl $HOME/bin/vmctl
         $ vmctl --help
         $ vmctl -c CONFIG <command>
-
+        ```
     2. Activate `vmctl` with `env` for your current shell
-
+        ```
         $ ./vmctl env --confdir $HOME/vms
         $ vmctl --help
         $ vmctl -c CONFIG <command>
+        ```
 
 4. Prepare a boot image. The base configruation `*-base.conf` will look for a
    base image in `img/base.qcow2`. You can use [archbase][archbase] to build a
