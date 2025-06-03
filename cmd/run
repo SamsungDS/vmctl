@@ -145,13 +145,7 @@ _run() {
   QEMU_PARAMS+=("-pidfile" "${VMROOT}/run/${VMNAME}/pidfile")
 
   if [[ -v kernel_dir ]]; then
-    local cmdline_extra=""
-    if [[ -v cloud_init_seed ]]; then
-      cmdline_extra="ci.datasource=NoCloud"
-    fi
-
-    qemu_kern_add_custom --kernel-dir "${kernel_dir}" \
-      --cmdline-extra "${cmdline_extra}"
+    qemu_kern_add_custom --kernel-dir "${kernel_dir}"
   fi
 
   if [[ -v do_background ]]; then
