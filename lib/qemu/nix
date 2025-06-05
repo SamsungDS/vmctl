@@ -5,15 +5,19 @@
 # Written by Joel Granados <joel.granados@kernel.org>
 
 _qemu_nix_create_nix_sys () {
-  local flake_path="$1"
-  local dst_path="$2"
+  local dst_path="$1"
   local flake_attr_path="nixosConfigurations.vm.config.system.build.toplevel"
   local flake_dst_dir="${VMSTATE}"
   local flake_dst_path="${flake_dst_dir}/flake.nix"
 
-  if ! cp -f "${flake_path}" "${flake_dst_path}"; then
+  : "${NIX_FLAKE_PATH:="${BASEDIR}/contrib/nix/x86_64-noimgnix-base.nix"}"
+  if [[ ! -f ${NIX_FLAKE_PATH} ]]; then
+    _fatal 1 "${FUNCNAME[0]}: File not found (${NIX_FLAKE_PATH})"
+  fi
+
+  if ! cp -f "${NIX_FLAKE_PATH}" "${flake_dst_path}"; then
     _fatal 1 "${FUNCNAME[0]}: Error copying \
-      src:(${flake_path}) dest:(${flake_dst_path})"
+      src:(${NIX_FLAKE_PATH}) dest:(${flake_dst_path})"
   fi
 
   local nix_build_cmd="nix build \
@@ -63,7 +67,7 @@ qemu_nix_add_noimgnix () {
   _require_program nix
   _require_path "${NIX_STORE_PATH}"
 
-  local long="flake-path:,cmd-line-extra:"
+  local long="cmd-line-extra:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -75,9 +79,6 @@ qemu_nix_add_noimgnix () {
   local cmd_line_extra=""
   while true; do
     case "$1" in
-      '--flake-path' )
-        local flake_path="$2"; shift 2
-        ;;
       '--cmd-line-extra' )
         cmd_line_extra="$2"; shift 2
         ;;
@@ -94,17 +95,10 @@ qemu_nix_add_noimgnix () {
     _fatal 1 "${FUNCNAME[0]}: VMSTATE global var is not set"
   fi
 
-  if [[ ! -v flake_path ]]; then
-    local flake_path="${BASEDIR}/contrib/nix/x86_64-noimgnix-base.nix"
-  fi
-
-  if [[ ! -f ${flake_path} ]]; then
-    _fatal 1 "${FUNCNAME[0]}: File not found (${flake_path})"
-  fi
-
   local dst_path="${VMSTATE}/nixsys"
-  if [[ -v NIX_SYS_BUILD_FORCE || ! -h ${dst_path} ]]; then
-    _qemu_nix_create_nix_sys "${flake_path}" "${dst_path}"
+  : "${NIX_SYS_BUILD_FORCE:="no"}" # defaults to "no" if not set
+  if [[ ${NIX_SYS_BUILD_FORCE} == "yes" || ! -h ${dst_path} ]]; then
+    _qemu_nix_create_nix_sys "${dst_path}"
   fi
 
   _qemu_nix_create_nix_init "${VMSTATE}"
