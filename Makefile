@@ -7,3 +7,4 @@ ifndef SHELLCHECK
 endif
 	shellcheck -a -x \
 		vmctl cmd/* common/* lib/qemu/*
+
