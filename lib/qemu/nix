@@ -109,7 +109,9 @@ qemu_nix_add_noimgnix () {
   if [[ -v GUEST_KERNEL_APPEND_EXTRA ]]; then
     cmd_line="${cmd_line} ${GUEST_KERNEL_APPEND_EXTRA}"
   fi
-  cmd_line="${cmd_line} ${cmd_line_extra} -- --init-path ${nix_init_path}"
+  cmd_line="${cmd_line} ${cmd_line_extra}"
+  cmd_line="${cmd_line} -- --init-path ${nix_init_path}"
+  cmd_line="${cmd_line} --mount nixstore,/nix/store,virtiofs"
 
   QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
   QEMU_PARAMS+=("-append" "${cmd_line}")
