@@ -36,9 +36,15 @@ _qemu_kern_img_add() {
   QEMU_PARAMS+=("-append" "$cmdline")
 }
 
-qemu_kern_add_custom() {
-  local cmdline_extra=""
-  local mod_share="9p"
+_qemu_check_kern_globs() {
+  for var in GUEST_KERNEL_IMAGE GUEST_KERNEL_CONSOLE; do
+    if [[ ! -v ${var} ]]; then
+      _fatal 1 "${FUNCNAME[0]} Missing var ${var}. Add it to ${VMCONFIG}"
+    fi
+  done
+}
+
+qemu_kernel_setup() {
   local long="kernel-dir:,cmdline-extra:,mod-share:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
@@ -69,24 +75,33 @@ qemu_kern_add_custom() {
   done
 
   if [[ ! -v kernel_dir ]]; then
-    _fatal 1 "${FUNCNAME[0]} Missing required --kernel-dir argument"
+    # Yes!; Do nothing with image-backed
+    if [[ -v NIX_STORE_PATH ]]; then
+      _qemu_check_kern_globs
+      qemu_nix_add_noimgnix
+    fi
+    return
   fi
 
-  for var in GUEST_KERNEL_IMAGE GUEST_KERNEL_CONSOLE; do
-    if [[ ! -v ${var} ]]; then
-      _fatal 1 "${FUNCNAME[0]} Missing var ${var}. Add it to ${VMCONFIG}"
-    fi
-  done
+  _qemu_check_kern_globs
 
-  if [[ -v NIX_STORE_PATH ]]; then
-    qemu_nix_add_noimgnix
-  else
-    _qemu_kern_img_add "${cmdline_extra}"
+  if [[ ! -v mod_share ]]; then
+    local mod_share="9p"
   fi
 
   local kernel_tag="kernel_dir"
   qemu_share_add --shared-dir "${kernel_dir}" \
     --tag "${kernel_tag}" \
     --share-type "${mod_share}"
-}
 
+  if [[ ! -v cmdline_extra ]]; then
+    local cmdline_extra=""
+  fi
+
+  if [[ -v NIX_STORE_PATH ]]; then
+    qemu_nix_add_noimgnix --kernel-dir "${kernel_dir}"
+  else
+    _qemu_kern_img_add "${cmdline_extra}"
+  fi
+
+}
