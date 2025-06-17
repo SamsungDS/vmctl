@@ -45,7 +45,7 @@ _qemu_check_kern_globs() {
 }
 
 qemu_kernel_setup() {
-  local long="kernel-dir:,cmdline-extra:,mod-share:"
+  local long="kernel-dir:,cmdline-extra:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -61,9 +61,6 @@ qemu_kernel_setup() {
         ;;
       '--cmdline-extra' )
         cmdline_extra="${cmdline_extra} $2"; shift 2
-        ;;
-      'mod-share' )
-        mod_share="$2"; shift 2
         ;;
       '--' )
         shift; break
@@ -85,23 +82,19 @@ qemu_kernel_setup() {
 
   _qemu_check_kern_globs
 
-  if [[ ! -v mod_share ]]; then
-    local mod_share="9p"
-  fi
-
-  local kernel_tag="kernel_dir"
-  qemu_share_add --shared-dir "${kernel_dir}" \
-    --tag "${kernel_tag}" \
-    --share-type "${mod_share}"
-
   if [[ ! -v cmdline_extra ]]; then
     local cmdline_extra=""
   fi
 
   if [[ -v NIX_STORE_PATH ]]; then
     qemu_nix_add_noimgnix --kernel-dir "${kernel_dir}"
+    local mod_share="9p"
   else
     _qemu_kern_img_add "${cmdline_extra}"
+    local mod_share="virtiofs"
   fi
 
+  qemu_share_add --shared-dir "${kernel_dir}" \
+    --tag "kernel_dir" \
+    --share-type "${mod_share}"
 }
