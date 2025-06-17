@@ -97,10 +97,11 @@ qemu_nix_add_noimgnix () {
     esac
   done
 
-  local nixsys_path="${VMSTATE}/nixsys"
+  local nixsys_link="${VMSTATE}/nixsys"
+  local nixsys_path=""; nixsys_path="$(readlink "${nixsys_link}")"
   : "${NIX_SYS_BUILD_FORCE:="no"}" # defaults to "no" if not set
-  if [[ ${NIX_SYS_BUILD_FORCE} == "yes" || ! -h ${nixsys_path} ]]; then
-    _qemu_nix_create_nix_sys "${nixsys_path}"
+  if [[ ${NIX_SYS_BUILD_FORCE} == "yes" || ! -h ${nixsys_link} ]]; then
+    _qemu_nix_create_nix_sys "${nixsys_link}"
   fi
 
   qemu_share_add --shared-dir "${NIX_STORE_PATH}" \
@@ -117,14 +118,12 @@ qemu_nix_add_noimgnix () {
     _fatal 1 "${FUNCNAME[0]}: Running a nixvm without a kernel is unsupported"
   fi
 
-  local nix_init_path=""
-  nix_init_path="$(readlink "${nixsys_path}")/init"
   local cmd_line="root=/dev/ram0 console=${GUEST_KERNEL_CONSOLE}"
   if [[ -v GUEST_KERNEL_APPEND_EXTRA ]]; then
     cmd_line="${cmd_line} ${GUEST_KERNEL_APPEND_EXTRA}"
   fi
   cmd_line="${cmd_line} ${cmd_line_extra}"
-  cmd_line="${cmd_line} -- --init-path ${nix_init_path}"
+  cmd_line="${cmd_line} -- --init-path ${nixsys_path}/init"
   if [[ -v NIX_MOUNTS ]]; then
     for nmount in "${NIX_MOUNTS[@]}"; do
       cmd_line="${cmd_line} --mount ${nmount}"
