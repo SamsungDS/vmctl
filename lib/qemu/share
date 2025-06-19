@@ -43,7 +43,7 @@ qemu_share_add_9p() {
 }
 
 qemu_share_add() {
-  local long="shared-dir:,tag:,share-type:"
+  local long="shared-dir:,tag:,share-type:,vm-dir:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -62,6 +62,9 @@ qemu_share_add() {
         ;;
       '--tag' )
         local tag="$2"; shift 2;
+        ;;
+      '--vm-dir' )
+        local vm_dir="$2"; shift 2;
         ;;
       '--' )
         shift; break
@@ -90,10 +93,17 @@ qemu_share_add() {
 
   if [[ "${share_type}" == "9p" ]]; then
     qemu_share_add_9p "${shared_dir}" "${tag}"
-  elif [[ "${share_type}" == "viofs" ]]; then
+  elif [[ "${share_type}" == "virtiofs" ]]; then
     qemu_share_add_virtiofsd "${shared_dir}" "${tag}"
   else
     _fatal 1 "${FUNCNAME[0]}: Unknown directory share type (${share_type})"
+  fi
+
+  if [[ -v vm_dir ]]; then
+    if [[ ! -v NIX_STORE_PATH ]]; then
+      _log "vm-dir ignored! it's only active in NIX"
+    fi
+    NIX_MOUNTS+=("${tag},${vm_dir},${share_type}")
   fi
 }
 
