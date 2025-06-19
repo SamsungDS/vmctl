@@ -129,6 +129,37 @@ add the following text to your configruation file (usually /etc/nix/nix.conf):
     experimental-features = nix-command flakes
 
 
+### Mounting directories
+
+This is useful when selftests or modules are needed within the VM.
+
+1. Early mount: Add a `qemu_share_add` to your vmctl config
+
+    ```sh
+      qemu_share_add \
+        --shared-dir "/path/to/modules/lib/modules" \
+        --tag "modules" \
+        --share-type "virtiofs" \
+        --vm-dir "/lib/modules"
+    ```
+
+    If you want to share but not mount, remove the --vm-dir arg.
+
+2. Systemd mount: Add a "service" to your nix configuration:
+
+    ```nix
+        systemd.services.mount-user-virtiofs = {
+          description = "Mount virtiofsd tag 'selftests' to /usr/lib/kselftests";
+          after = [ "local-fs.target" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "/run/current-system/sw/bin/mount -t virtiofs user /usr/lib/kselftests";
+            RemainAfterExit = true;
+          };
+        };
+    ```
+
 ## Prep boot img
 
 The base configruation `*-base.conf` will look for a base image in

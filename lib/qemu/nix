@@ -103,6 +103,11 @@ qemu_nix_add_noimgnix () {
 
   _qemu_nix_create_nix_init "${VMSTATE}"
 
+  qemu_share_add --shared-dir "${NIX_STORE_PATH}" \
+      --tag "nixstore" \
+      --share-type "virtiofs" \
+      --vm-dir "/nix/store"
+
   local nix_init_path=""
   nix_init_path="$(readlink "${dst_path}")/init"
   local cmd_line="root=/dev/ram0 console=${GUEST_KERNEL_CONSOLE}"
@@ -111,13 +116,14 @@ qemu_nix_add_noimgnix () {
   fi
   cmd_line="${cmd_line} ${cmd_line_extra}"
   cmd_line="${cmd_line} -- --init-path ${nix_init_path}"
-  cmd_line="${cmd_line} --mount nixstore,/nix/store,virtiofs"
+  if [[ -v NIX_MOUNTS ]]; then
+    for nmount in "${NIX_MOUNTS[@]}"; do
+      cmd_line="${cmd_line} --mount ${nmount}"
+    done
+  fi
 
   QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
   QEMU_PARAMS+=("-append" "${cmd_line}")
   QEMU_PARAMS+=("-initrd" "${VMSTATE}/init.img")
 
-  qemu_share_add --shared-dir "${NIX_STORE_PATH}" \
-      --tag "nixstore" \
-      --share-type "viofs"
 }
