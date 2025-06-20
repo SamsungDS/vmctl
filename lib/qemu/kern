@@ -5,8 +5,6 @@
 # Written by Joel Granados <joel.granados@kernel.org>
 
 _qemu_kern_img_add() {
-  local cmdline_extra="$1"
-
   for var in GUEST_BOOT GUEST_BOOT_BASE; do
     if [[ ! -v ${var} ]]; then
       _fatal 1 "${FUNCNAME[0]} Missing var ${var}. Add it to ${VMCONFIG}"
@@ -27,13 +25,9 @@ _qemu_kern_img_add() {
     GUEST_KERNEL_BOOTDEV="/dev/vda1"
   fi
 
-  local cmdline="root=${GUEST_KERNEL_BOOTDEV} console=${GUEST_KERNEL_CONSOLE} ${cmdline_extra}"
-  if [[ -v GUEST_KERNEL_APPEND_EXTRA ]]; then
-    cmdline="$cmdline ${GUEST_KERNEL_APPEND_EXTRA}"
-  fi
-
   QEMU_PARAMS+=("-kernel" "${GUEST_KERNEL_CUSTOM_DIR}/${GUEST_KERNEL_IMAGE}")
-  QEMU_PARAMS+=("-append" "$cmdline")
+  QEMU_PARAMS+=("-append" \
+    "root=${GUEST_KERNEL_BOOTDEV} console=${GUEST_KERNEL_CONSOLE} ${GUEST_KERNEL_APPEND_EXTRA}")
 }
 
 _qemu_check_kern_globs() {
@@ -45,29 +39,6 @@ _qemu_check_kern_globs() {
 }
 
 qemu_kernel_setup() {
-  local long="cmdline-extra:"
-
-  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
-    exit 1
-  fi
-
-  eval set -- "$tmp"
-  unset tmp
-
-  while true; do
-    case "$1" in
-      '--cmdline-extra' )
-        cmdline_extra="${cmdline_extra} $2"; shift 2
-        ;;
-      '--' )
-        shift; break
-        ;;
-      * )
-        _fatal 1 "unknown argument '$1'"
-        ;;
-    esac
-  done
-
   if [[ ! -v GUEST_KERNEL_CUSTOM_DIR ]]; then
     # Yes!; Do nothing with image-backed
     if [[ -v NIX_STORE_PATH ]]; then
@@ -79,15 +50,11 @@ qemu_kernel_setup() {
 
   _qemu_check_kern_globs
 
-  if [[ ! -v cmdline_extra ]]; then
-    local cmdline_extra=""
-  fi
-
   if [[ -v NIX_STORE_PATH ]]; then
     qemu_nix_add_noimgnix
     local mod_share="virtiofs"
   else
-    _qemu_kern_img_add "${cmdline_extra}"
+    _qemu_kern_img_add
     local mod_share="9p"
   fi
 
