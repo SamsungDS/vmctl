@@ -49,10 +49,10 @@ _run() {
   while true; do
     case "$1" in
       '-k' | '--kernel-dir' )
-        local kernel_dir="$2"; shift 2
+        GUEST_KERNEL_CUSTOM_DIR="$2"; shift 2
 
-        if [[ ! -d "$kernel_dir" ]]; then
-          _fatal 1 "no such directory: '$kernel_dir'"
+        if [[ ! -d "${GUEST_KERNEL_CUSTOM_DIR}" ]]; then
+          _fatal 1 "no such directory: '${GUEST_KERNEL_CUSTOM_DIR}'"
         fi
         ;;
 
@@ -144,11 +144,7 @@ _run() {
 
   QEMU_PARAMS+=("-pidfile" "${VMROOT}/run/${VMNAME}/pidfile")
 
-  if [[ -v kernel_dir ]]; then
-    qemu_kernel_setup --kernel-dir "${kernel_dir}"
-  else
-    qemu_kernel_setup
-  fi
+  qemu_kernel_setup
 
   if [[ -v do_background ]]; then
     QEMU_PARAMS+=("-daemonize")

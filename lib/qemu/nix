@@ -71,7 +71,7 @@ qemu_nix_add_noimgnix () {
     _fatal 1 "${FUNCNAME[0]}: VMSTATE global var is not set"
   fi
 
-  local long="cmd-line-extra:,kernel-dir:"
+  local long="cmd-line-extra:"
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
   fi
@@ -84,9 +84,6 @@ qemu_nix_add_noimgnix () {
     case "$1" in
       '--cmd-line-extra' )
         cmd_line_extra="$2"; shift 2
-        ;;
-      '--kernel-dir' )
-        local kernel_dir="$2"; shift 2
         ;;
       '--' )
         shift; break
@@ -111,8 +108,8 @@ qemu_nix_add_noimgnix () {
 
   _qemu_nix_create_nix_init "${VMSTATE}"
 
-  if [[ -v kernel_dir ]]; then
-    QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
+  if [[ -v GUEST_KERNEL_CUSTOM_DIR ]]; then
+    QEMU_PARAMS+=("-kernel" "${GUEST_KERNEL_CUSTOM_DIR}/${GUEST_KERNEL_IMAGE}")
     QEMU_PARAMS+=("-initrd" "${VMSTATE}/init.img")
   else
     _fatal 1 "${FUNCNAME[0]}: Running a nixvm without a kernel is unsupported"

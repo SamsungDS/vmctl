@@ -32,7 +32,7 @@ _qemu_kern_img_add() {
     cmdline="$cmdline ${GUEST_KERNEL_APPEND_EXTRA}"
   fi
 
-  QEMU_PARAMS+=("-kernel" "${kernel_dir}/${GUEST_KERNEL_IMAGE}")
+  QEMU_PARAMS+=("-kernel" "${GUEST_KERNEL_CUSTOM_DIR}/${GUEST_KERNEL_IMAGE}")
   QEMU_PARAMS+=("-append" "$cmdline")
 }
 
@@ -45,7 +45,7 @@ _qemu_check_kern_globs() {
 }
 
 qemu_kernel_setup() {
-  local long="kernel-dir:,cmdline-extra:"
+  local long="cmdline-extra:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
     exit 1
@@ -56,9 +56,6 @@ qemu_kernel_setup() {
 
   while true; do
     case "$1" in
-      '--kernel-dir' )
-        local kernel_dir="$2"; shift 2
-        ;;
       '--cmdline-extra' )
         cmdline_extra="${cmdline_extra} $2"; shift 2
         ;;
@@ -71,7 +68,7 @@ qemu_kernel_setup() {
     esac
   done
 
-  if [[ ! -v kernel_dir ]]; then
+  if [[ ! -v GUEST_KERNEL_CUSTOM_DIR ]]; then
     # Yes!; Do nothing with image-backed
     if [[ -v NIX_STORE_PATH ]]; then
       _qemu_check_kern_globs
@@ -87,14 +84,14 @@ qemu_kernel_setup() {
   fi
 
   if [[ -v NIX_STORE_PATH ]]; then
-    qemu_nix_add_noimgnix --kernel-dir "${kernel_dir}"
-    local mod_share="9p"
+    qemu_nix_add_noimgnix
+    local mod_share="virtiofs"
   else
     _qemu_kern_img_add "${cmdline_extra}"
-    local mod_share="virtiofs"
+    local mod_share="9p"
   fi
 
-  qemu_share_add --shared-dir "${kernel_dir}" \
+  qemu_share_add --shared-dir "${GUEST_KERNEL_CUSTOM_DIR}" \
     --tag "kernel_dir" \
     --share-type "${mod_share}"
 }
