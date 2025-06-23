@@ -130,7 +130,7 @@ _require_program() {
 }
 
 _require_path() {
-  local rpath="$1"; shift
+  local rpath="$1"
 
   if [[ ! -d "${rpath}" ]]; then
     _fatal 1 "Path not found (${rpath}). $*"

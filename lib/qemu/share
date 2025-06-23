@@ -77,9 +77,7 @@ qemu_share_add() {
     _fatal 1 "${FUNCNAME[0]}: missing required '--shared-dir' argument"
   fi
 
-  if [[ ! -d ${shared_dir} ]]; then
-    _fatal 1 "${FUNCNAME[0]}: ${shared_dir} does not exist"
-  fi
+  _require_path "${shared_dir}"
 
   if [[ ! -v tag ]]; then
     _fatal 1 "${FUNCNAME[0]}: missing required '--tag' argument"

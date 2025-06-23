@@ -50,10 +50,7 @@ _run() {
     case "$1" in
       '-k' | '--kernel-dir' )
         GUEST_KERNEL_CUSTOM_DIR="$2"; shift 2
-
-        if [[ ! -d "${GUEST_KERNEL_CUSTOM_DIR}" ]]; then
-          _fatal 1 "no such directory: '${GUEST_KERNEL_CUSTOM_DIR}'"
-        fi
+        _require_path "${GUEST_KERNEL_CUSTOM_DIR}"
         ;;
 
       '-c' | '--cloud-init' )
