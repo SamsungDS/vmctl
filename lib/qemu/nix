@@ -66,10 +66,7 @@ _qemu_nix_create_nix_init () {
 qemu_nix_add_noimgnix () {
   _require_program nix
   _require_path "${NIX_STORE_PATH}"
-
-  if [[ ! -v VMSTATE ]]; then
-    _fatal 1 "${FUNCNAME[0]}: VMSTATE global var is not set"
-  fi
+  _require_vars "VMSTATE"
 
   local nixsys_link="${VMSTATE}/nixsys"
   local nixsys_path=""; nixsys_path="$(readlink "${nixsys_link}")"

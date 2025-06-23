@@ -5,11 +5,7 @@
 # Written by Joel Granados <joel.granados@kernel.org>
 
 _qemu_kern_img_add() {
-  for var in GUEST_BOOT GUEST_BOOT_BASE; do
-    if [[ ! -v ${var} ]]; then
-      _fatal 1 "${FUNCNAME[0]} Missing var ${var}. Add it to ${VMCONFIG}"
-    fi
-  done
+  _require_vars "GUEST_BOOT GUEST_BOOT_BASE"
 
   if [[ ! -f "${VMROOT}/$GUEST_BOOT" ]]; then
     if [[ ! -f "${VMROOT}/$GUEST_BOOT_BASE" ]]; then
@@ -30,25 +26,17 @@ _qemu_kern_img_add() {
     "root=${GUEST_KERNEL_BOOTDEV} console=${GUEST_KERNEL_CONSOLE} ${GUEST_KERNEL_APPEND_EXTRA}")
 }
 
-_qemu_check_kern_globs() {
-  for var in GUEST_KERNEL_IMAGE GUEST_KERNEL_CONSOLE; do
-    if [[ ! -v ${var} ]]; then
-      _fatal 1 "${FUNCNAME[0]} Missing var ${var}. Add it to ${VMCONFIG}"
-    fi
-  done
-}
-
 qemu_kernel_setup() {
   if [[ ! -v GUEST_KERNEL_CUSTOM_DIR ]]; then
     # Yes!; Do nothing with image-backed
     if [[ -v NIX_STORE_PATH ]]; then
-      _qemu_check_kern_globs
+      _require_vars "GUEST_KERNEL_IMAGE GUEST_KERNEL_CONSOLE"
       qemu_nix_add_noimgnix
     fi
     return
   fi
 
-  _qemu_check_kern_globs
+  _require_vars "GUEST_KERNEL_IMAGE GUEST_KERNEL_CONSOLE"
 
   if [[ -v NIX_STORE_PATH ]]; then
     qemu_nix_add_noimgnix

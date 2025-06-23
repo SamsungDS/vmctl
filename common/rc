@@ -137,6 +137,14 @@ _require_path() {
   fi
 }
 
+_require_vars() {
+  for var in $1; do
+    if [[ ! -v ${var} ]]; then
+      _fatal 1 "${FUNCNAME[0]} Missing var ${var}. Missing in ${VMCONFIG}?"
+    fi
+  done
+}
+
 _is_running() {
   if [[ -f "${VMRUN}/pidfile" ]]; then
     return 0

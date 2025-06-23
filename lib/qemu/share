@@ -6,9 +6,7 @@
 
 _qemu_share_force_memshare() {
   # memshare for virtiofs https://virtio-fs.gitlab.io/howto-qemu.html
-  if [[ ! -v GUEST_MEMORY ]]; then
-    _fatal 1 "${FUNCNAME[0]}: GUEST_MEMORY variable is undefined"
-  fi
+  _require_vars "GUEST_MEMORY"
 
   if [[ "${QEMU_PARAMS[*]}" != *"memory-backend-file"* ]]; then
     QEMU_PARAMS+=("-object" "memory-backend-file,id=mem,size=${GUEST_MEMORY},mem-path=/dev/shm,share=on")
