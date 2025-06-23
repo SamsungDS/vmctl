@@ -52,9 +52,7 @@ _env() {
     _require_program socat
 
     exampledir="${BASEDIR}/examples/vm"
-    if [[ ! -d ${exampledir} ]]; then
-      _fatal 1 "Example dir (${exampledir}) not found."
-    fi
+    _require_path "${exampledir}"
 
     if [ ! -d "${bootstrap_dir}" ]; then
       if ! mkdir --parent ${verbose} "${bootstrap_dir}"; then
