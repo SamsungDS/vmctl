@@ -15,18 +15,12 @@ _qemu_nix_create_nix_sys () {
     _fatal 1 "${FUNCNAME[0]}: File not found (${NIX_FLAKE_PATH})"
   fi
 
-  if ! cp -f "${NIX_FLAKE_PATH}" "${flake_dst_path}"; then
-    _fatal 1 "${FUNCNAME[0]}: Error copying \
-      src:(${NIX_FLAKE_PATH}) dest:(${flake_dst_path})"
-  fi
+  _add_pre_cmd "cp -f \"${NIX_FLAKE_PATH}\" \"${flake_dst_path}\""
 
-  local nix_build_cmd="nix build \
+  _add_pre_cmd "nix build \
     'path:${flake_dst_dir}#${flake_attr_path}' \
     -o \"${dst_path}\" \
     --no-write-lock-file"
-  if ! eval "${nix_build_cmd}"; then
-    _fatal 1 "${FUNCNAME[0]}: Error running '${nix_build_cmd}'"
-  fi
 }
 
 _qemu_nix_create_nix_init () {
@@ -41,26 +35,19 @@ _qemu_nix_create_nix_init () {
 
   local make_path="${state_dir}/Makefile"
   if [[ ! -f ${make_path} ]]; then
-    if ! ln -s "${BASEDIR}/contrib/nix/Makefile" "${make_path}"; then
-      _fatal 1 "${FUNCNAME[0]}: Error creating sym link for ${make_path}"
-    fi
+    _add_pre_cmd "ln -s \"${BASEDIR}/contrib/nix/Makefile\" \"${make_path}\""
   fi
 
   local c_init_path="${state_dir}/vmctl_init.c"
   if [[ ! -f ${c_init_path} ]]; then
-    if ! ln -s "${BASEDIR}/contrib/nix/vmctl_init.c" "${c_init_path}"; then
-      _fatal 1 "${FUNCNAME[0]}: Error creating sym link for ${c_init_path}"
-    fi
+    _add_pre_cmd "ln -s \"${BASEDIR}/contrib/nix/vmctl_init.c\" \"${c_init_path}\""
   fi
 
   if [[ ${NIX_INIT_REBUILD} == "yes" ]]; then
-    if ! make -C "${state_dir}" clean; then
-      _fatal 1 "${FUNCNAME[0]}: Error cleaning ${c_init_path}"
-    fi
+    _add_pre_cmd "make -C \"${state_dir}\" clean"
   fi
-  if ! make -C "${state_dir}" all; then
-    _fatal 1 "${FUNCNAME[0]}: Error compiling ${c_init_path}"
-  fi
+
+  _add_pre_cmd "make -C \"${state_dir}\" all"
 }
 
 qemu_nix_add_noimgnix () {
