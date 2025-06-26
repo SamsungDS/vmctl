@@ -36,6 +36,7 @@ qemu_kernel_setup() {
     return
   fi
 
+  _require_path "${GUEST_KERNEL_CUSTOM_DIR}"
   _require_vars "GUEST_KERNEL_IMAGE GUEST_KERNEL_CONSOLE"
 
   if [[ -v NIX_STORE_PATH ]]; then
