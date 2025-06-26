@@ -7,7 +7,7 @@
 _qemu_nix_create_nix_sys () {
   local dst_path="$1"
   local flake_attr_path="nixosConfigurations.vm.config.system.build.toplevel"
-  local flake_dst_dir="${VMSTATE}"
+  local flake_dst_dir="${VMSTATE}/nixstage"
   local flake_dst_path="${flake_dst_dir}/flake.nix"
 
   : "${NIX_FLAKE_PATH:="${BASEDIR}/contrib/nix/x86_64-noimgnix-base.nix"}"
@@ -15,6 +15,7 @@ _qemu_nix_create_nix_sys () {
     _fatal 1 "${FUNCNAME[0]}: File not found (${NIX_FLAKE_PATH})"
   fi
 
+  _add_pre_cmd "mkdir -p \"${flake_dst_dir}\""
   _add_pre_cmd "cp -f \"${NIX_FLAKE_PATH}\" \"${flake_dst_path}\""
 
   _add_pre_cmd "nix build \
@@ -56,7 +57,7 @@ qemu_nix_add_noimgnix () {
   _require_vars "VMSTATE"
 
   local nixsys_link="${VMSTATE}/nixsys"
-  local nixsys_path=""; nixsys_path="$(readlink "${nixsys_link}")"
+  local nixsys_path=""; nixsys_path="$(readlink -f "${nixsys_link}")"
   : "${NIX_SYS_BUILD_FORCE:="no"}" # defaults to "no" if not set
   if [[ ${NIX_SYS_BUILD_FORCE} == "yes" || ! -h ${nixsys_link} ]]; then
     _qemu_nix_create_nix_sys "${nixsys_link}"
