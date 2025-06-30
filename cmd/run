@@ -49,7 +49,7 @@ _run() {
   while true; do
     case "$1" in
       '-k' | '--kernel-dir' )
-        GUEST_KERNEL_CUSTOM_DIR="$2"; shift 2
+        local kernel_dir="$2" ; shift 2
         ;;
 
       '-c' | '--cloud-init' )
@@ -140,6 +140,9 @@ _run() {
 
   QEMU_PARAMS+=("-pidfile" "${VMROOT}/run/${VMNAME}/pidfile")
 
+  if [[ -v kernel_dir ]]; then
+    GUEST_KERNEL_CUSTOM_DIR="${kernel_dir}"
+  fi
   qemu_kernel_setup
 
   if [[ -v do_background ]]; then
