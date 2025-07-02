@@ -14,7 +14,7 @@ Options:
   -w, --wait     wait until an ssh connection is established
   -p, --port     port to connect to (default: \"$GUEST_SSH_PORT\")
   -l, --login    the user to log in as (default: \"$GUEST_SSH_USER\")
-  -c, --comand   Execute a command and disconnect"
+  -c, --command  Execute a command and disconnect"
 
 _ssh() {
   _require_program ssh
