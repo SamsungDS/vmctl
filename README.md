@@ -32,7 +32,8 @@ running.
         ```
     2. Activate `vmctl` with `env` for your current shell
         ```
-        $ ./vmctl env --confdir $HOME/vms
+        $ ./vmctl env --bootstrap $HOME/vms --verbose
+        $ ./vmctl env
         $ vmctl --help
         $ vmctl -c CONFIG <command>
         ```
