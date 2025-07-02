@@ -6,5 +6,9 @@
 
 # suppress unused global variable warnings
 _silence_sc2034() {
-  echo "$QEMU_SYSTEM_BINARY $QEMU_TRACE_EVENTS ${GUEST_KERNEL_CMDLINE[*]} $RESET" > /dev/null
+  echo "$QEMU_SYSTEM_BINARY \
+    $QEMU_TRACE_EVENTS \
+    ${GUEST_KERNEL_CMDLINE[*]} \
+    $RESET \
+    $GUEST_KERNEL_CUSTOM_DIR " > /dev/null
 }
