@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: GPL-3.0-or-late
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2025 Samsung Electronics Co., Ltd. All Rights Reserved.
 #
 # Written by Joel Granados <joel.granados@kernel.org>
