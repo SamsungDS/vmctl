@@ -10,6 +10,19 @@ The \`kill\` command shuts down the running virtual machine defined by the
 given \`CONFIG\` using a \`quit\` QEMU monitor command."
 
 source "${BASEDIR}/common/msgs"
+_run_sys_kill() {
+  local curr_pid=""
+  if [[ ! -f "${VMRUN}/pidfile" ]]; then
+    return 1
+  fi
+  curr_pid="$(cat "${VMRUN}/pidfile")"
+  if kill -0 "${curr_pid}" 2> /dev/null; then
+    kill -9 "${curr_pid}"
+  fi
+  rm -f "${VMRUN}/pidfile"
+  return 0
+}
+
 _kill() {
   _require_program socat
 
@@ -43,15 +56,15 @@ _kill() {
     _fatal 1 "$VMNAME does not appear to be running"
   fi
 
-  if [[ ! -S "${VMRUN}/monitor" ]]; then
-    _fatal 1 "${VMNAME}: ${MSG_CHECK_DAEMONIZED/THE COMMAND/quit}"
+  if [[ -S "${VMRUN}/monitor" ]]; then
+    local args=( "-" "UNIX-CONNECT:${VMRUN}/monitor")
+    if echo quit | socat "${args[@]}" >> "${VMLOG}/full" 2>&1; then
+      return 0
+    fi
   fi
 
-  local args=(
-    "-" "UNIX-CONNECT:${VMRUN}/monitor"
-  )
-
-  if ! echo quit | socat "${args[@]}" >> "${VMLOG}/full" 2>&1; then
-    _fatal 1 "could not power off vm; see ${VMLOG}/full"
+  if ! _run_sys_kill >> "${VMLOG}/full" ; then
+      _fatal 1 "could not power off vm; see ${VMLOG}/full"
   fi
+
 }
