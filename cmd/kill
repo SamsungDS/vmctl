@@ -9,6 +9,7 @@ USAGE="usage: ${BASENAME} -c CONFIG kill
 The \`kill\` command shuts down the running virtual machine defined by the
 given \`CONFIG\` using a \`quit\` QEMU monitor command."
 
+source "${BASEDIR}/common/msgs"
 _kill() {
   _require_program socat
 
@@ -42,8 +43,8 @@ _kill() {
     _fatal 1 "$VMNAME does not appear to be running"
   fi
 
-  if ! _is_daemonized; then
-    _fatal 1 "$VMNAME is running interactively; attach to monitor from console using 'Ctrl-a c' and kill using 'quit'"
+  if [[ ! -S "${VMRUN}/monitor" ]]; then
+    _fatal 1 "${VMNAME}: ${MSG_CHECK_DAEMONIZED/THE COMMAND/quit}"
   fi
 
   local args=(

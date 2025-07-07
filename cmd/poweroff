@@ -9,6 +9,7 @@ USAGE="usage: ${BASENAME} -c CONFIG poweroff
 The \`poweroff\` command gracefully shuts down the running virtual machine
 defined by the given \`CONFIG\` if supported by the machine."
 
+source "${BASEDIR}/common/msgs"
 _poweroff() {
   _require_program socat
 
@@ -42,8 +43,8 @@ _poweroff() {
     _fatal 1 "$VMNAME does not appear to be running"
   fi
 
-  if ! _is_daemonized; then
-    _fatal 1 "$VMNAME is running interactively; attach to monitor from console using 'Ctrl-a c' and type 'system_powerdown'"
+  if [[ ! -S "${VMRUN}/monitor" ]]; then
+    _fatal 1 "${VMNAME}: ${MSG_CHECK_DAEMONIZED/THE COMMAND/system_powerdown}"
   fi
 
   local args=(
