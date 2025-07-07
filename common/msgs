@@ -4,8 +4,10 @@
 #
 # Written by Joel Granados <joel.granados@kernel.org>
 
-MSG_CHECK_DAEMONIZED="${VMNAME} is most likely running interactively. \
-Try to attach monitor using 'Ctrl-a c' and type system_powerdown. \
+source "${BASEDIR}/common/shellcheck"
+
+MSG_CHECK_DAEMONIZED="The vm is most likely running interactively. \
+Try to attach monitor using 'Ctrl-a c' and type THE COMMAND. \
 Or add '-d' to vmctl command to run daemonized"
 
 

@@ -153,14 +153,6 @@ _is_running() {
   return 1
 }
 
-_is_daemonized() {
-  if [[ -S "${VMRUN}/monitor" ]]; then
-    return 0
-  fi
-
-  return 1
-}
-
 _add_pre_cmd() {
   VMPRE+=("$1")
 }

@@ -10,5 +10,6 @@ _silence_sc2034() {
     $QEMU_TRACE_EVENTS \
     ${GUEST_KERNEL_CMDLINE[*]} \
     $RESET \
-    $GUEST_KERNEL_CUSTOM_DIR " > /dev/null
+    $MSG_CHECK_DAEMONIZED \
+    $GUEST_KERNEL_CUSTOM_DIR" > /dev/null
 }
