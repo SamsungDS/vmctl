@@ -55,4 +55,9 @@ _poweroff() {
   if ! echo system_powerdown | socat "${args[@]}" >> "${VMLOG}/full" 2>&1; then
     _fatal 1 "could not power off vm; see ${VMLOG}/full"
   fi
+
+  if echo "info status" | socat "${args[@]}" >> "${VMLOG}/full" 2>&1; then
+    _fatal 1 "poweroff returned success but did not execute a power off." \
+      "Try the kill command"
+  fi
 }
