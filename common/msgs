@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Joel Granados <joel.granados@kernel.org>
+
+MSG_CHECK_DAEMONIZED="${VMNAME} is most likely running interactively. \
+Try to attach monitor using 'Ctrl-a c' and type system_powerdown. \
+Or add '-d' to vmctl command to run daemonized"
+
+

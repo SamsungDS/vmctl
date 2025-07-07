@@ -149,9 +149,10 @@ _run() {
     QEMU_PARAMS+=("-daemonize")
 
     # serial and monitor
-    QEMU_PARAMS+=("-serial" "unix:${VMROOT}/run/${VMNAME}/console,server,nowait")
-    QEMU_PARAMS+=("-monitor" "unix:${VMROOT}/run/${VMNAME}/monitor,server,nowait")
+    QEMU_PARAMS+=("-serial" "unix:${VMRUN}/console,server,nowait")
+    QEMU_PARAMS+=("-monitor" "unix:${VMRUN}/monitor,server,nowait")
   else
+    _add_pre_cmd "rm -f ${VMRUN}/console ${VMRUN}/monitor"
     QEMU_PARAMS+=("-serial" "mon:stdio")
   fi
 
