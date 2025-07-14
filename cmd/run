@@ -180,6 +180,10 @@ _run() {
   if [[ -v do_print ]]; then
     if [[ -v VMPRE ]]; then
       echo "Before QEMU:"
+      if command -v _pre > /dev/null; then
+        declare -f _pre
+      fi
+      echo
       for cmd in "${VMPRE[@]}"; do
         echo -n "  $cmd"
         echo
@@ -204,6 +208,9 @@ _run() {
     done
 
     echo
+    if command -v _post > /dev/null; then
+      typeset -f _post
+    fi
 
     exit 0
   fi
