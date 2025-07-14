@@ -87,7 +87,7 @@ qemu_drive_add() {
   while true; do
     case "$1" in
       '--file' )
-        local file="/$2"; shift 2
+        local file="$2"; shift 2
         ;;
 
       '--format' )
@@ -139,11 +139,9 @@ qemu_drive_add() {
   local id="$1"
 
   if [[ ! -v file ]]; then
-    local file="/state/${VMNAME}/${id}.img"
-  fi
-
-  if [[ ! -v DOCKER_IMAGE ]]; then
-    file="${VMROOT}${file}"
+    local file="${VMROOT}/state/${VMNAME}/${id}.img"
+  elif [[ "${file}" != /* ]]; then
+    file="${VMROOT}/${file}"
   fi
 
   if [[ -v do_create ]]; then
