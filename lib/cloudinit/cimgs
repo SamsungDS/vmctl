@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Joel Granados <joel.granados@kernel.org>
+
+cloudinit_get_img() {
+  _require_program wget
+
+  local long="ubuntu-25,cloud-img-path:,resize-to:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  while true; do
+    case "$1" in
+      '--ubuntu-25' )
+        local base_url="https://cloud-images.ubuntu.com/releases/plucky/release"
+        local img_name="ubuntu-25.04-server-cloudimg-amd64.img"
+        shift
+        ;;
+      '--cloud-img-path' )
+        local cloud_img_path="$2"; shift 2
+        ;;
+      '--resize-to' )
+        local resize_to="$2"; shift 2
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ ! -v base_url || ! -v img_name ]]; then
+    _fatal 1 "${FUNCNAME[0]} base_url or img_name are undefined"
+  fi
+
+  if [[ ! -v cloud_img_path ]]; then
+    _fatal 1 "${FUNCNAME[0]} missing --cloud-img-path arg"
+  fi
+
+  if [[ -v resize_to ]]; then
+    _require_program qemu-img
+  fi
+
+  wget -O "${cloud_img_path}" "${base_url}/${img_name}"
+
+  if [[ -v resize_to ]]; then
+    qemu-img resize "${cloud_img_path}" "${resize_to}"
+  fi
+}

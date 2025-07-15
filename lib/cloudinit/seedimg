@@ -79,6 +79,7 @@ EOF
 }
 
 cloudinit_make_seed_img() {
+  _require_program mkisofs
   local long="seed-img-path:,meta-data-file:,usr-data-file:,usr-name:,usr-passwd:"
 
   if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
