@@ -9,7 +9,7 @@ set -euo pipefail
 #shellcheck source=common/rc
 source "${BASEDIR}/common/rc"
 
-for rc in "${BASEDIR}"/lib/qemu/*; do
+for rc in "${BASEDIR}"/lib/*/*; do
   #shellcheck disable=SC1090
   source "$rc"
 done
