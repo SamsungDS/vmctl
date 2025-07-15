@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025 Samsung Electronics Co., Ltd. All Rights Reserved.
+#
+# Written by Joel Granados <joel.granados@kernel.org>
+
+cloudinit_make_userdatafile() {
+  cloudinit_get_sshkey
+  _require_vars "CLOUDINIT_SSHKEY"
+
+  cat > "${CLOUDINIT_USR_DATA_FILE}" << EOF
+#cloud-config
+disable_root: false
+ssh_pwauth: false
+
+users:
+  - name: ${CLOUDINIT_USR_NAME}
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    groups: users, admin
+    home: /home/${CLOUDINIT_USR_NAME}
+    shell: /bin/bash
+    lock_passwd: false
+    plain_text_passwd: '${CLOUDINIT_USR_PASSWD}'
+    ssh_authorized_keys:
+      - ${CLOUDINIT_SSHKEY}
+
+  - name: root
+    ssh_authorized_keys:
+      - ${CLOUDINIT_SSHKEY}
+
+write_files:
+- path: /etc/systemd/system/mount-shared-kernel-dir.service
+  content: |
+    # Cribbed and slightly modified from a systemd unit-file created by Omar Sandoval:
+    # https://github.com/osandov/osandov-linux/blob/master/scripts/vm-modules-mounter.service
+
+    [Unit]
+    Description=Mount shared kernel build dir
+    DefaultDependencies=no
+    After=systemd-remount-fs.service
+    Before=local-fs-pre.target systemd-modules-load.service systemd-udevd.service kmod-static-nodes.service umount.target
+    Conflicts=umount.target
+    RefuseManualStop=true
+    ConditionPathExists=!/lib/modules/%v/kernel
+
+    [Install]
+    WantedBy=local-fs-pre.target
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    ExecStart=mount -t tmpfs -o mode=755,strictatime,x-mount.mkdir,x-initrd.mount tmpfs /lib/modules/%v
+    ExecStart=mount -t 9p -o trans=virtio,ro,x-mount.mkdir,x-initrd.mount kernel_dir /lib/modules/%v/build
+    ExecStart=ln -s build/modules.order /lib/modules/%v/modules.order
+    ExecStart=ln -s build/modules.builtin /lib/modules/%v/modules.builtin
+    ExecStart=ln -s build /lib/modules/%v/kernel
+    ExecStart=-depmod %v
+    ExecStopPost=sh -c 'if mountpoint -q /lib/modules/%v/build; then umount -l /lib/modules/%v/build; fi'
+    ExecStopPost=sh -c 'if mountpoint -q /lib/modules/%v; then umount -l /lib/modules/%v; fi'
+    ExecStopPost=find /lib/modules -mindepth 1 -maxdepth 1 -type d -empty -delete
+    ExecReload=-depmod %v
+
+runcmd:
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, mount-shared-kernel-dir.service ]
+
+power_state:
+  mode: poweroff
+  condition: true
+EOF
+}
+
+cloudinit_make_metadatafile() {
+  cat > "${CLOUDINIT_META_DATA_FILE}" << EOF
+#cloud-config
+#instance-id: vmctl-1
+#local-hostname: vmctl
+EOF
+}
+
+cloudinit_make_seed_img() {
+  local long="seed-img-path:,meta-data-file:,usr-data-file:,usr-name:,usr-passwd:"
+
+  if ! tmp=$(getopt -o "" --long "$long" -n "${FUNCNAME[0]}" -- "$@"); then
+    exit 1
+  fi
+
+  eval set -- "$tmp"
+  unset tmp
+
+  CLOUDINIT_USR_NAME="vmuser"
+  CLOUDINIT_USR_PASSWD="${CLOUDINIT_USR_NAME}"
+  while true; do
+    case "$1" in
+      '--meta-data-file' )
+        CLOUDINIT_META_DATA_FILE="$2"; shift 2
+        ;;
+      '--usr-data-file' )
+        CLOUDINIT_USR_DATA_FILE="$2"; shift 2
+        ;;
+      '--usr-name' )
+        CLOUDINIT_USR_NAME="$2"; shift 2
+        ;;
+      '--usr-passwd' )
+        CLOUDINIT_USR_PASSWD="$2"; shift 2;
+        ;;
+      '--seed-img-path' )
+        local seed_img_path="$2"; shift 2;
+        ;;
+      '--' )
+        shift; break
+        ;;
+      * )
+        _fatal 1 "unknown argument '$1'"
+        ;;
+    esac
+  done
+
+  if [[ ! -v seed_img_path ]]; then
+    _fatal 1 "${FUNCNAME[0]} Missing --seed-img-path arg"
+  fi
+
+  _require_vars "CLOUDINIT_META_DATA_FILE CLOUDINIT_USR_DATA_FILE"
+
+  cloudinit_make_userdatafile
+  cloudinit_make_metadatafile
+
+  mkisofs -output "${seed_img_path}" \
+    -volid cidata -joliet -rock "${CLOUDINIT_USR_DATA_FILE}" "${CLOUDINIT_META_DATA_FILE}"
+}
