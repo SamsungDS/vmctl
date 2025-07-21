@@ -13,14 +13,13 @@ Options:
   -h, --help     display this help message and exit
   -w, --wait     wait until an ssh connection is established
   -p, --port     port to connect to (default: \"$GUEST_SSH_PORT\")
-  -l, --login    the user to log in as (default: \"$GUEST_SSH_USER\")
-  -c, --command  Execute a command and disconnect"
+  -l, --login    the user to log in as (default: \"$GUEST_SSH_USER\")"
 
 _ssh() {
   _require_program ssh
 
-  local short="+w,p:,l:,c:,h"
-  local long="wait,port:,login:,command:,help"
+  local short="+w,p:,l:,h"
+  local long="wait,port:,login:,help"
 
   if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
     exit 1
@@ -43,9 +42,6 @@ _ssh() {
       '-h' | '--help' )
         _usage "$USAGE" 0
         ;;
-      '-c' | '--command' )
-        cmd="$2"; shift 2
-        ;;
       '--' )
         shift; break
         ;;
@@ -59,7 +55,6 @@ _ssh() {
 
   : "${port:="${GUEST_SSH_PORT}"}"
   : "${user:="${GUEST_SSH_USER}"}"
-  : "${cmd:=""}"
 
   if ! _is_running; then
     _fatal 1 "$VMNAME does not appear to be running"
@@ -82,5 +77,5 @@ _ssh() {
   fi
 
   #shellcheck disable=SC2029
-  ssh "${args[@]}" localhost "$@" "${cmd}"
+  ssh "${args[@]}" localhost "$@"
 }
