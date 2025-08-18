@@ -1,4 +1,4 @@
-CC := $(shell command -v musl-clang 2>/dev/null || echo gcc)
+CC := $(shell command -v musl-clang 2> /dev/null || echo gcc)
 CFLAGS := -Os -static -ffunction-sections -fdata-sections
 LDFLAGS := -Wl,--gc-sections
 BUILDDIR ?= .
@@ -6,10 +6,9 @@ SRC := vmctl_init.c
 OUT := $(BUILDDIR)/init
 IMG := $(BUILDDIR)/init.img
 
-.PHONY: clean
+.PHONY: clean all
 
 $(OUT): $(SRC)
-	@echo "Compiler: $(CC)"
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
 
 $(IMG): $(OUT)
@@ -19,3 +18,6 @@ all: $(IMG)
 
 clean:
 	rm -f $(OUT) $(IMG)
+
+print-%:
+	@echo $* = $($*)
