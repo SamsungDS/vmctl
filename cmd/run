@@ -9,7 +9,7 @@ set -euo pipefail
 #shellcheck source=common/rc
 source "${BASEDIR}/common/rc"
 
-for rc in "${BASEDIR}"/lib/qemu/*; do
+for rc in "${BASEDIR}"/lib/*/*; do
   #shellcheck disable=SC1090
   source "$rc"
 done
@@ -24,7 +24,6 @@ Options:
   -k, --kernel-dir DIR      directory containing the kernel source. The
                             directory will be made available to the vm as a 9p
                             virtfs with mount tag 'kernel_dir'
-  -c, --cloud-init          use '\${VMIMG}/seed.img' as a cloud-init seed
   -b, --background          start in the background
   -g, --gdb                 launch under gdb
   -p, --perf                perf record
@@ -36,8 +35,8 @@ Options:
                             event with a '-'"
 
 _run() {
-  local short="k:cd:bnfgpt:h"
-  local long="kernel-dir:,cloud-init,background,print,reset,gdb,perf,trace:,help"
+  local short="k:d:bnfgpt:h"
+  local long="kernel-dir:,background,print,reset,gdb,perf,trace:,help"
 
   if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
     exit 1
@@ -50,10 +49,6 @@ _run() {
     case "$1" in
       '-k' | '--kernel-dir' )
         local kernel_dir="$2" ; shift 2
-        ;;
-
-      '-c' | '--cloud-init' )
-        local do_cloud_init=1; shift
         ;;
 
       '-b' | '--background' )
@@ -126,17 +121,6 @@ _run() {
   for logfile in full stderr qemu.log; do
     truncate -s 0 "${VMLOG}/${logfile}"
   done
-
-  if [[ -v do_cloud_init ]]; then
-    if [[ ! -f "${VMIMG}/seed.img" ]]; then
-      _fatal 1 "no such file: '${VMIMG}/seed.img'"
-    fi
-
-    qemu_drive_add "cloud-init-seed" \
-      --file "img/seed.img" \
-      --format "raw" \
-      --interface "virtio"
-  fi
 
   QEMU_PARAMS+=("-pidfile" "${VMROOT}/run/${VMNAME}/pidfile")
 

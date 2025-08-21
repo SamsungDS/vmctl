@@ -163,50 +163,31 @@ This is useful when selftests or modules are needed within the VM.
 
 ## Prep boot img
 
-The base configruation `*-base.conf` will look for a base image in
-`img/base.qcow2`. You can use [archbase][archbase] to build a lean Arch Linux
-base image or grab a QCOW2-based [Ubuntu cloud image][ubuntu-cloud-image] if
-that's your vice.
+There needs to be a base image in `img/base.qcow2` because the default configs
+`*-base.conf` expect it. Use the following command to create a QCOW2-based
+[Ubuntu cloud image][ubuntu-cloud-image]:
 
-In the case of a standard "cloud image", you probably want to resize it since
-it is usually shrunk to be as small as possible by default.
+    $ vmctl -c cloudinit.conf run
 
-    $ qemu-img resize img/base.qcow2 8G
+**Note**: This command will do the following:
+    1. Create an ubuntu amd64 plucky image
+    2. Resize it to 8G
+    3. Add first ~/.ssh/*.pub file for ssh connections
+    4. Configure default login:"vmuser" and passwd:"vmuser"
+    5. It will do a qemu seed run and then powerdown to set everything up
 
-**Note** The example `nvme.conf` will define `GUEST_BOOT="img/nvme.qcow2"`.
-You do not need to provide that image - if it is not there `$GUEST_BOOT`
-will be a differential image backed by `img/base.qcow2`. So, if you ever
-need to reset to the "base" state, just remove the `img/nvme.qcow2` image.
+After running the `cloudinit.conf` configuration, you should see an image in
+`img/base.qcow2` which you can run by doing:
+
+    $ vmctl -c nvme.conf run -b
+    $ vmctl -c nvme.conf ssh --wait
+
+**Note**: Customize cloudinit.conf if the defaults don't work for you
+
+**Note** Use [archbase][archbase] to build a lean Arch Linux base image
 
 [archbase]: https://github.com/OpenMPDK/archbase
 [ubuntu-cloud-image]: https://cloud-images.ubuntu.com
-
-### cloud-init
-
-If your chosen base image is meant to be configured through [cloud-init][cloud-init],
-you can use the included cloud-config helper script to generate a basic
-cloud-init seed image:
-
-    $ ./contrib/generate-cloud-config-seed.sh ~/.ssh/id_rsa.pub
-
-If the image is running freebsd, use the script with `-freebsd` suffix:
-
-    $ ./contrib/generate-cloud-config-seed-freebsd.sh ~/.ssh/id_rsa.pub
-
-This will generate a simple cloud-init seed image that will set up the image
-with a default `vmuser` account that can be logged into using the given public
-key. Place the output image (`seed.img`) in `img/` and pass the `--cloud-init`
-(short: `'-c'`) option to `vmctl run` to initialize the image on first boot:
-
-    $ vmctl -c CONFIG run -c
-
-cloud-init will automatically power off the virtual machine when it has been
-configured.
-
-**Note**: For the cloud-config helper script to work `cloud-utils` is required.
-
-[cloud-init]: https://cloudinit.readthedocs.io/en/latest/
-
 
 ## License
 
