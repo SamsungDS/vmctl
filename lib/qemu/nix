@@ -35,14 +35,10 @@ _qemu_nix_create_nix_init () {
   _require_program "$(command -v musl-clang 2> /dev/null || echo gcc)"
 
   local make_path="${state_dir}/Makefile"
-  if [[ ! -f ${make_path} ]]; then
-    _add_pre_cmd "ln -s \"${BASEDIR}/contrib/nix/Makefile\" \"${make_path}\""
-  fi
+  _add_pre_cmd "cp -f \"${BASEDIR}/contrib/nix/Makefile\" \"${make_path}\""
 
   local c_init_path="${state_dir}/vmctl_init.c"
-  if [[ ! -f ${c_init_path} ]]; then
-    _add_pre_cmd "ln -s \"${BASEDIR}/contrib/nix/vmctl_init.c\" \"${c_init_path}\""
-  fi
+  _add_pre_cmd "cp -f \"${BASEDIR}/contrib/nix/vmctl_init.c\" \"${c_init_path}\""
 
   if [[ ${NIX_INIT_REBUILD} == "yes" ]]; then
     _add_pre_cmd "make -C \"${state_dir}\" clean"
