@@ -26,6 +26,8 @@ qemu_share_add_virtiofsd() {
     --socket-path \"${socket_path}\" --log-level off &"
   _add_pre_cmd "${cmd}"
 
+  _add_clean_procs_name "$(cat "${socket_path}.pid" 2> /dev/null)" "virtiofsd"
+
   _qemu_share_force_memshare
 
   QEMU_PARAMS+=("-chardev" "${chardev_params}")
