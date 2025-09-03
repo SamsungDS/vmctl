@@ -33,11 +33,13 @@ Options:
   -t, --trace EVENT,...     enable/disable trace event (seperated by commas).
                             Example: '-t nvme' enables all trace events with
                             the nvme prefix. Disable events by prefixing the
-                            event with a '-'"
+                            event with a '-'
+  -P, --purge               Remove all artifacts related to VM. If passed,
+                            VM is not run."
 
 _run() {
-  local short="k:cd:bnfgpt:h"
-  local long="kernel-dir:,cloud-init,background,print,reset,gdb,perf,trace:,help"
+  local short="k:cd:bnfgpt:hP"
+  local long="kernel-dir:,cloud-init,background,print,reset,gdb,perf,trace:,help,purge"
 
   if ! tmp=$(getopt -o "$short" --long "$long" -n "$BASENAME" -- "$@"); then
     exit 1
@@ -84,6 +86,10 @@ _run() {
         _usage "$USAGE" 0
         ;;
 
+      '-P' | '--purge' )
+        local do_purge=1; shift
+        ;;
+
       '--' )
         shift; break
         ;;
@@ -97,18 +103,10 @@ _run() {
   readonly RESET
 
   _load_vm
+  _fail_if_running
 
   if [[ -v do_gdb && -v do_background ]]; then
     _fatal 1 "--gdb cannot be used with --background"
-  fi
-
-  if [[ -f "${VMRUN}/pidfile" ]]; then
-    if pidof "$QEMU_SYSTEM_BINARY" >/dev/null; then
-      _fatal 1 "'${VMRUN}/pidfile' exists; vm might already be running"
-    else
-      _log "removing the stale '${VMRUN}/pidfile'"
-      rm -f "${VMRUN}/pidfile"
-    fi
   fi
 
   local setup_fn
@@ -173,6 +171,37 @@ _run() {
       done
       IFS="$_IFS"
     fi
+  fi
+
+  # do the purge first if set
+  if [[ -v do_purge ]]; then
+    if [[ -v VMCTL_RUN_CLEAN_PROCS ]]; then
+      for cmd in "${VMCTL_RUN_CLEAN_PROCS[@]}"; do
+        if [[ -v do_print ]]; then
+          cmd="echo $cmd"
+        fi
+
+        #shellcheck disable=SC2086
+        if ! eval $cmd ; then
+          _fatal 1 "Evaluation of ${cmd} failed"
+        fi
+      done
+    fi
+
+    # Dirs always get cleaned at the end
+    if [[ -v VMCTL_RUN_CLEAN_DIRS ]]; then
+      for cmd in "${VMCTL_RUN_CLEAN_DIRS[@]}"; do
+        if [[ -v do_print ]]; then
+          cmd="echo $cmd"
+        fi
+        #shellcheck disable=SC2086
+        if ! eval $cmd ; then
+          _fatal 1 "Evaluation of ${cmd} failed"
+        fi
+      done
+    fi
+
+    exit 0
   fi
 
   params=("${QEMU_PARAMS[@]}")
