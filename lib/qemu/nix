@@ -16,7 +16,7 @@ _qemu_nix_create_nix_sys () {
   fi
 
   _add_pre_cmd "mkdir -p \"${flake_dst_dir}\""
-  _add_pre_cmd "cp -f \"${NIX_FLAKE_PATH}\" \"${flake_dst_path}\""
+  _add_pre_cmd "cp --remove-destination \"${NIX_FLAKE_PATH}\" \"${flake_dst_path}\""
 
   _add_pre_cmd "nix build \
     'path:${flake_dst_dir}#${flake_attr_path}' \
@@ -35,10 +35,10 @@ _qemu_nix_create_nix_init () {
   _require_program "$(command -v musl-clang 2> /dev/null || echo gcc)"
 
   local make_path="${state_dir}/Makefile"
-  _add_pre_cmd "cp -f \"${BASEDIR}/contrib/nix/Makefile\" \"${make_path}\""
+  _add_pre_cmd "cp --remove-destination \"${BASEDIR}/contrib/nix/Makefile\" \"${make_path}\""
 
   local c_init_path="${state_dir}/vmctl_init.c"
-  _add_pre_cmd "cp -f \"${BASEDIR}/contrib/nix/vmctl_init.c\" \"${c_init_path}\""
+  _add_pre_cmd "cp --remove-destination \"${BASEDIR}/contrib/nix/vmctl_init.c\" \"${c_init_path}\""
 
   if [[ ${NIX_INIT_REBUILD} == "yes" ]]; then
     _add_pre_cmd "make -C \"${state_dir}\" clean"
